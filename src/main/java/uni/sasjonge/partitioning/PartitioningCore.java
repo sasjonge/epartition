@@ -2,7 +2,9 @@ package uni.sasjonge.partitioning;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.transform.TransformerConfigurationException;
 
@@ -32,9 +34,18 @@ import org.semanticweb.owlapi.model.OWLQuantifiedRestriction;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.xml.sax.SAXException;
 
+/**
+ * 
+ * Core partitioning algorithm based on the following paper:
+ * 
+ * 
+ * @author Sascha Jongebloed
+ *
+ */
 public class PartitioningCore {
 	
 	public Graph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
+	public Map<DefaultEdge,String> edgeToAxioms = new HashMap<>();
 
 	/**
 	 * E-part Algorithm: Partitions the given ontology in several smaller ontologies and returns them
@@ -144,39 +155,48 @@ public class PartitioningCore {
 	 */
 	public void addAxiomEdges(OWLAxiom ax) {
 		
+		DefaultEdge edge = null;
+		
 		// ClassAssertion
 		if(ax instanceof OWLClassAssertionAxiom) {
-			g.addEdge(getCleanName(((OWLClassAssertionAxiom) ax).getIndividual()), getCleanName(((OWLClassAssertionAxiom) ax).getClassExpression()));
+			edge = g.addEdge(getCleanName(((OWLClassAssertionAxiom) ax).getIndividual()), getCleanName(((OWLClassAssertionAxiom) ax).getClassExpression()));
 		} else
 			
 		// Subclass
 		if (ax instanceof OWLSubClassOfAxiom) {
-			g.addEdge(getCleanName(((OWLSubClassOfAxiom) ax).getSubClass()), getCleanName(((OWLSubClassOfAxiom) ax).getSuperClass()));
+			edge = g.addEdge(getCleanName(((OWLSubClassOfAxiom) ax).getSubClass()), getCleanName(((OWLSubClassOfAxiom) ax).getSuperClass()));
 		} 
 		
 		// Equivalence
 		else if (ax instanceof OWLEquivalentClassesAxiom) {
-			g.addEdge(getCleanName(((OWLEquivalentClassesAxiom) ax).getOperandsAsList().get(0)), getCleanName(((OWLEquivalentClassesAxiom) ax).getOperandsAsList().get(1)));
+			edge = g.addEdge(getCleanName(((OWLEquivalentClassesAxiom) ax).getOperandsAsList().get(0)), getCleanName(((OWLEquivalentClassesAxiom) ax).getOperandsAsList().get(1)));
+		
+			
+		// FunctionalObjectProperty	
 		//} else if (ax instanceof OWLFunctionalObjectPropertyAxiom) {
-			//g.addEdge(sourceVertex, targetVertex)
+			//edge = g.addEdge(sourceVertex, targetVertex)
 		
 		// Disjointness
 		} else if (ax instanceof OWLDisjointClassesAxiom) {
-			g.addEdge(getCleanName(((OWLDisjointClassesAxiom) ax).getOperandsAsList().get(0)), getCleanName(((OWLDisjointClassesAxiom) ax).getOperandsAsList().get(1)));
+			edge = g.addEdge(getCleanName(((OWLDisjointClassesAxiom) ax).getOperandsAsList().get(0)), getCleanName(((OWLDisjointClassesAxiom) ax).getOperandsAsList().get(1)));
 
 		// ObjectPropertyRange
 		} else if (ax instanceof OWLObjectPropertyRangeAxiom) {
-			g.addEdge(getCleanName(((OWLObjectPropertyRangeAxiom) ax).getRange()),getCleanName(((OWLObjectPropertyRangeAxiom) ax).getProperty())+"1");
+			edge = g.addEdge(getCleanName(((OWLObjectPropertyRangeAxiom) ax).getRange()),getCleanName(((OWLObjectPropertyRangeAxiom) ax).getProperty())+"1");
 		
 		// ObjectPropertyDomain
 		} else if (ax instanceof OWLObjectPropertyDomainAxiom) {
-			g.addEdge(getCleanName(((OWLObjectPropertyDomainAxiom) ax).getDomain()),getCleanName(((OWLObjectPropertyDomainAxiom) ax).getProperty())+"0");
+			edge = g.addEdge(getCleanName(((OWLObjectPropertyDomainAxiom) ax).getDomain()),getCleanName(((OWLObjectPropertyDomainAxiom) ax).getProperty())+"0");
 		
 		// Default case
 		} else {
-			if(!(ax instanceof OWLClassAssertionAxiom | ax instanceof OWLDeclarationAxiom | ax instanceof OWLAnnotationAssertionAxiom)) {
+			if(!(ax instanceof OWLDeclarationAxiom | ax instanceof OWLAnnotationAssertionAxiom)) {
 				System.err.println("Missing axiom: " + ax.getAxiomType() + " Form: " + ax);
 			}
+		}
+		
+		if(edge != null) {
+			edgeToAxioms.put(edge, getCleanName(ax));
 		}
 		
 	}

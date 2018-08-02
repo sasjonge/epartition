@@ -17,7 +17,6 @@ import org.xml.sax.SAXException;
 import uni.sasjonge.partitioning.PartitioningCore;
 import uni.sasjonge.utils.GraphExporter;
 
-
 public class Partitioner {
 	
 	// The output path for the graph
@@ -47,13 +46,12 @@ public class Partitioner {
 				try {
 					manager.saveOntology(t);
 				} catch (OWLOntologyStorageException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			});
 			
 			// Export the graph
-			GraphExporter.exportComplexGraph(pc.g, GRAPH_OUTPUT_PATH);
+			GraphExporter.exportCCStructureGraph(pc.g, pc.edgeToAxioms, GRAPH_OUTPUT_PATH);
 		} catch (OWLOntologyCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
