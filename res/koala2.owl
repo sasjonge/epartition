@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#"
+     xml:base="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#controls -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#controls"/>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#dependsOn -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#dependsOn"/>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasClimate -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasClimate"/>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasGender -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasGender">
+        <rdfs:range rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Gender"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasHabitat -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasHabitat">
+        <rdfs:range rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Habitat"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasVegetation -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasVegetation"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Animal -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Animal">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:intersectionOf rdf:parseType="Collection">
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasGender"/>
+                        <owl:someValuesFrom rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasHabitat"/>
+                        <owl:someValuesFrom rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+                    </owl:Restriction>
+                </owl:intersectionOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Climate -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Climate">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#controls"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Vegetation"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Continent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Continent"/>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#DryEucalyptForest -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#DryEucalyptForest">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Forest"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Forest -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Forest">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Habitat"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Gender -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Gender"/>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Habitat -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Habitat">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:intersectionOf rdf:parseType="Collection">
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasClimate"/>
+                        <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Climate"/>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasVegetation"/>
+                        <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Vegetation"/>
+                    </owl:Restriction>
+                </owl:intersectionOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Koala -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Koala">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:intersectionOf rdf:parseType="Collection">
+                    <rdf:Description rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Marsupial"/>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#hasHabitat"/>
+                        <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#DryEucalyptForest"/>
+                    </owl:Restriction>
+                </owl:intersectionOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Marsupial -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Marsupial">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Animal"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Quokka -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Quokka">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Marsupial"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Vegetation -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Vegetation">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Climate"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Individuals
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#australia -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#australia">
+        <rdf:type rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Continent"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#female -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#female">
+        <rdf:type rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Gender"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#male -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#male">
+        <rdf:type rdf:resource="http://www.semanticweb.org/schneider/ontologies/2017/7/untitled-ontology-14#Gender"/>
+    </owl:NamedIndividual>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.2.8.20170104-2310) https://github.com/owlcs/owlapi -->
+
