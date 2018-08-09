@@ -9,11 +9,18 @@ import java.util.Set;
 
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.ComponentNameProvider;
 import org.jgrapht.io.ExportException;
 import org.jgrapht.io.GraphMLExporter;
+import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
+import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxObjectRenderer;
+import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxRenderer;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLOntology;
 
 /**
  * Utility class for different graph exporting methods
@@ -22,7 +29,9 @@ import org.jgrapht.io.GraphMLExporter;
  *
  */
 public class GraphExporter {
-
+	
+	public static ManchesterOWLSyntaxOWLObjectRendererImpl manchester = new ManchesterOWLSyntaxOWLObjectRendererImpl();
+	static Map<String,String> mapVertexToManchester;
 	/**
 	 * Exports g in graphML to outputPath
 	 * Every node and edge is shown as is in the graph
@@ -39,7 +48,7 @@ public class GraphExporter {
             @Override
             public String getName(String vertex)
             {
-                return vertex.toString();
+                return getCleanName(vertex);
             }
         });
         exporter.setVertexIDProvider(new ComponentNameProvider<String>()
@@ -47,7 +56,7 @@ public class GraphExporter {
             @Override
             public String getName(String vertex)
             {
-                return vertex.toString();
+            	return getCleanName(vertex);
             }
         });
         //exporter.setVertexLabelAttributeName("custom_vertex_label");
@@ -72,20 +81,20 @@ public class GraphExporter {
 	 * @param outputPath Parth to output to
 	 * @throws ExportException
 	 */
-	public static void exportCCStructureGraph(Graph<String, DefaultEdge> g, Map<DefaultEdge,String> edgeToAxiomName, String outputPath) throws ExportException {
-		
+	public static void exportCCStructureGraph(Graph<String, DefaultEdge> g, Map<String,OWLAxiom> vertexToAxiom, String outputPath) throws ExportException {
+
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
 		
 		// Create the graph we want to output
-		Graph<String, DefaultEdge> ccGraph = new SimpleGraph<>(DefaultEdge.class);
+		Graph<String, DefaultEdge> ccGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
 		
 		// Maps a name to each cc
 		Map<Set<String>,String> ccToVertexName = new HashMap<>();
 				
 		// Add vertexes for all connected components
 		ci.connectedSets().stream().forEach(cc -> {
-			String name = "Subconcepts:\n"+String.join("\n", cc) + getAxiomString(cc,g,edgeToAxiomName);
+			String name = getSubConceptString(cc) + getAxiomString(cc,g,vertexToAxiom);
 			ccToVertexName.put(cc, name);
 			ccGraph.addVertex(name);
 		});
@@ -107,12 +116,12 @@ public class GraphExporter {
 					Set<String> correspondingCC = subToCC.get(subcon.substring(0,subcon.length()-1)+"1");
 					if (correspondingCC != null) {
 						DefaultEdge edge = ccGraph.addEdge(ccToVertexName.get(cc), ccToVertexName.get(correspondingCC));
-						nameForEdge.put(edge, subcon.substring(0,subcon.length()-1));
+						nameForEdge.put(edge, getCleanName(subcon.substring(0,subcon.length()-1)));
 					}
 				}
 			});
 		});
-		
+				
 		/////////////////////////////////////////////////////////////////////////
 		// Export the Graph
 		GraphMLExporter<String, DefaultEdge> exporter = new GraphMLExporter<>();
@@ -123,7 +132,7 @@ public class GraphExporter {
             @Override
             public String getName(String vertex)
             {
-                return vertex.toString();
+                return getCleanName(vertex);
             }
         });
 		// Register additional name attribute for edges
@@ -157,37 +166,91 @@ public class GraphExporter {
 	 * @return A String in form of a list of all axioms
 	 */
 	private static String getAxiomString(Set<String> cc, Graph<String, DefaultEdge> g,
-			Map<DefaultEdge, String> edgeToAxiomName) {
-		
-		// First create a map that maps vertexes to all edges for which they are the source
-		Map<String, Set<DefaultEdge>> vertexToEdges = new HashMap<>();
-		g.edgeSet().stream().forEach(edge -> {
-			String source = g.getEdgeSource(edge);
-			if(vertexToEdges.containsKey(source)) {
-				vertexToEdges.get(source).add(edge);
-			} else {
-				Set<DefaultEdge> newSet = new HashSet<>();
-				newSet.add(edge);
-				vertexToEdges.put(source, newSet);
-			}
-		});
+			Map<String, OWLAxiom> vertexToAxiom) {
 		
 		// Build the string
 		StringBuilder toReturn = new StringBuilder();
-		toReturn.append("\n--------\nAxioms.\n");
+		toReturn.append("\n--------\nAxioms:\n");
 		cc.stream().forEach(vertex -> {
-			System.out.println(vertexToEdges.get(vertex));
-			if (vertexToEdges.containsKey(vertex)) {
-				vertexToEdges.get(vertex).stream().forEach(edge -> {
-					// Here check wether the edge is "labelled
-					if (edgeToAxiomName.containsKey(edge)) {
-						toReturn.append(edgeToAxiomName.get(edge));
-						toReturn.append("\n");
-					}
-				});;
+			if (vertexToAxiom.containsKey(vertex)) {
+				toReturn.append(getCleanName(manchester.render(vertexToAxiom.get(vertex))));
+				toReturn.append("\n");
 			}
 		});
-		
+	
 		return toReturn.toString();
+	}
+	
+	/**
+	 * Returns a String of all subConcepts corresponding to the given connected component
+	 * 
+	 * @param cc Connected Component, List of Vertex Names
+	 * @param g Graph
+	 * @param edgeToAxiomName A map from edges to sub concepts
+	 * @return A String in form of a list of all sub concepts
+	 */
+	private static String getSubConceptString(Set<String> cc) {
+		// Build the string
+		StringBuilder toReturn = new StringBuilder();
+		toReturn.append("Subconcepts:\n");
+		cc.stream().forEach(vertex -> {
+				toReturn.append(getCleanName(mapVertexToManchester.get(vertex)));
+				toReturn.append("\n");
+		});
+	
+		return toReturn.toString();
+	}
+
+	public static String getCleanName(String owlName) {
+		return owlName.replaceAll("http[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*#|<|>", "");
+	}
+	
+	/**
+	 * Creates a mapping from all vertexes in our graphs
+	 * to their corresponding manchester syntax
+	 * 
+	 * @param ontology The corresponding ontology
+	 */
+	private static Map<String,String> mapVertexToManchester(OWLOntology ontology) {
+		Map<String,String> toReturn = new HashMap<>();
+		
+		// Vertex: ObjectProperties
+		ontology.objectPropertiesInSignature().forEach(objProp -> {
+			if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
+				toReturn.put(objProp.toString() + "0", manchester.render(objProp) + "0");
+				toReturn.put(objProp.toString() + "1", manchester.render(objProp) + "1");
+			}
+		});
+
+		// Vertex: DataProperties
+		ontology.dataPropertiesInSignature().forEach(dataProp -> {
+			if (!dataProp.isOWLTopDataProperty() && !dataProp.isTopEntity()) {
+				toReturn.put(dataProp.toString(), manchester.render(dataProp).toString());
+			}
+		});
+
+		// Vertex: SubConcepts
+		ontology.logicalAxioms().forEach(a -> {
+			a.nestedClassExpressions().forEach(nested -> {
+				if (!nested.isOWLThing()) {
+					toReturn.put(nested.toString(), manchester.render(nested));
+				}
+			});
+		});
+		// Vertex: Individuals
+		ontology.individualsInSignature().forEach(indiv -> {
+			toReturn.put(indiv.toString(), manchester.render(indiv));
+		});
+		
+		return toReturn;
+	}
+
+	/**
+	 * Initiates mappings
+	 * @param ontology
+	 */
+	public static void init(OWLOntology ontology) {
+		mapVertexToManchester = mapVertexToManchester(ontology);
+		
 	}
 }

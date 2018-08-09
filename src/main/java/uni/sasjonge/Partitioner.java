@@ -16,6 +16,7 @@ import org.xml.sax.SAXException;
 
 import uni.sasjonge.partitioning.PartitioningCore;
 import uni.sasjonge.utils.GraphExporter;
+import uni.sasjonge.utils.OntologyReducer;
 
 public class Partitioner {
 	
@@ -23,7 +24,7 @@ public class Partitioner {
 	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/test.graphml";
 	
 	// The input ontology
-	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/koala2.owl";
+	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/partitioner_test.owl";
 
 	
@@ -36,22 +37,29 @@ public class Partitioner {
 		
 		try {
 			// Load the input ontology
-			OWLOntology ontology = manager.loadOntology(IRI.create(INPUT_ONTOLOGY));
+			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,manager.loadOntology(IRI.create(INPUT_ONTOLOGY)),4);
 			
+			long startTime = System.nanoTime();
 			// Call the partitioning algorithm
 			List<OWLOntology> partitionedOntologies = pc.partition(ontology);
+			long endTime = System.nanoTime();
+			System.out.println("Partitioning took " + (endTime - startTime)/1000000 + "ms");
 			
 			// Export the onotologys
-			partitionedOntologies.stream().forEach(t -> {
-				try {
-					manager.saveOntology(t);
-				} catch (OWLOntologyStorageException e) {
-					e.printStackTrace();
-				}
-			});
+			//partitionedOntologies.stream().forEach(t -> {
+			//	try {
+			//		manager.saveOntology(t);
+			//	} catch (OWLOntologyStorageException e) {
+			//		e.printStackTrace();
+			//	}
+			//});
 			
 			// Export the graph
-			GraphExporter.exportCCStructureGraph(pc.g, pc.edgeToAxioms, GRAPH_OUTPUT_PATH);
+			startTime = System.nanoTime();
+			GraphExporter.init(ontology);
+			GraphExporter.exportCCStructureGraph(pc.g, pc.vertexToAxiom, GRAPH_OUTPUT_PATH);
+			endTime = System.nanoTime();
+			System.out.println("Graph building took " + (endTime - startTime)/1000000 + "ms");
 		} catch (OWLOntologyCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
