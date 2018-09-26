@@ -73,6 +73,7 @@ import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
+import org.semanticweb.owlapi.model.axiomproviders.PropertyChainAxiomProvider;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.deser.impl.ExternalTypeHandler.Builder;
@@ -140,7 +141,7 @@ public class PartitioningCore {
 		});
 
 		long addVertexEndTime = System.nanoTime();
-		System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000);
+		System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000 + "ms");
 
 		long addSubEdgeStartTime = System.nanoTime();
 		// Add the edges according to our defined algorithm
@@ -153,22 +154,23 @@ public class PartitioningCore {
 			});
 		});
 		long addSubEdgeEndTime = System.nanoTime();
-		System.out.println("Adding subconcept edges took " + (addSubEdgeEndTime - addSubEdgeStartTime) / 1000000);
+		System.out
+				.println("Adding subconcept edges took " + (addSubEdgeEndTime - addSubEdgeStartTime) / 1000000 + "ms");
 
 		// Edge: All axioms
 		long addAxiomEdgeStartTime = System.nanoTime();
 		ontology.logicalAxioms().forEach(this::addAxiomEdges);
 		long addAxiomEdgeEndTime = System.nanoTime();
 
-		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000);
+		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
 		long ccStartTime = System.nanoTime();
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
 		long ccEndTime = System.nanoTime();
 		// ci.connectedSets().stream().forEach(System.out::println);
+		System.out.println("Finding the cc's took " + (ccEndTime - ccStartTime) / 1000000 + "ms");
 		System.out.println("CCs: " + ci.connectedSets().size());
-		System.out.println("Finding the cc's took " + (ccEndTime - ccStartTime) / 1000000);
 
 		// Create the new ontologies
 		ci.connectedSets().stream().forEach(cc -> {
@@ -281,7 +283,9 @@ public class PartitioningCore {
 		case "SubClassOf":
 			OWLSubClassOfAxiom subCOf = (OWLSubClassOfAxiom) ax;
 			vertex = subCOf.getSubClass().toString();
-			g.addEdge(vertex, subCOf.getSuperClass().toString());
+			if (!subCOf.getSuperClass().isOWLThing()) {
+				g.addEdge(vertex, subCOf.getSuperClass().toString());
+			}
 			break;
 
 		case "EquivalentClasses":
@@ -320,6 +324,21 @@ public class PartitioningCore {
 			}
 			break;
 
+		case "SubPropertyChainOf":
+			OWLSubPropertyChainOfAxiom propChainAx = (OWLSubPropertyChainOfAxiom) ax;
+			List<OWLObjectPropertyExpression> propertyChain = propChainAx.getPropertyChain();
+			int chainLength = propertyChain.size();
+			vertex = getPropertyVertex(propertyChain.get(0), 0);
+			// Link first with superproperty
+			g.addEdge(getPropertyVertex(propertyChain.get(0), 0), getPropertyVertex(propChainAx.getSuperProperty(), 0));
+			// Link last with superproperty
+			g.addEdge(getPropertyVertex(propertyChain.get(chainLength - 1), 1),
+					getPropertyVertex(propChainAx.getSuperProperty(), 1));
+			for (int k = 0; k < chainLength - 1; k++) {
+				g.addEdge(getPropertyVertex(propertyChain.get(k), 1), getPropertyVertex(propertyChain.get(k + 1), 0));
+			}
+			break;
+
 		case "EquivalentObjectProperties":
 		case "DisjointObjectProperties":
 			OWLNaryPropertyAxiom<OWLObjectPropertyExpression> naryPropAx = (OWLNaryPropertyAxiom<OWLObjectPropertyExpression>) ax;
@@ -347,19 +366,23 @@ public class PartitioningCore {
 		case "ObjectPropertyRange":
 			OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
 			vertex = getPropertyVertex(objPropRangeAx.getProperty(), 0);
-			g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), objPropRangeAx.getRange().toString());
+			if (!objPropRangeAx.getRange().isOWLThing()) {
+				g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), objPropRangeAx.getRange().toString());
+			}
 			break;
 
 		case "ObjectPropertyDomain":
 			OWLObjectPropertyDomainAxiom objPropDomAx = (OWLObjectPropertyDomainAxiom) ax;
 			vertex = getPropertyVertex(objPropDomAx.getProperty(), 0);
-			g.addEdge(vertex, objPropDomAx.getDomain().toString());
+			if (!objPropDomAx.getDomain().isOWLThing()) {
+				g.addEdge(vertex, objPropDomAx.getDomain().toString());
+			}
 			break;
 
 		case "FunctionalObjectProperty":
 		case "AsymmetricObjectProperty":
 		case "InverseFunctionalObjectProperty":
-		case "IrreflexiveObjectProperty":
+		case "IrrefexiveObjectProperty":
 			vertex = getPropertyVertex(((OWLObjectPropertyCharacteristicAxiom) ax).getProperty(), 0);
 			break;
 		case "ReflexiveObjectProperty":
@@ -396,8 +419,10 @@ public class PartitioningCore {
 
 		case "DataPropertyDomain":
 			OWLDataPropertyDomainAxiom dataPropDomAx = (OWLDataPropertyDomainAxiom) ax;
-			vertex = dataPropDomAx.getDomain().toString();
-			g.addEdge(vertex, dataPropDomAx.getProperty().toString());
+			vertex = dataPropDomAx.getProperty().toString();
+			if (!dataPropDomAx.getDomain().isOWLThing()) {
+				g.addEdge(vertex, dataPropDomAx.getDomain().toString());
+			}
 			break;
 
 		case "FunctionalDataProperty":
@@ -472,7 +497,7 @@ public class PartitioningCore {
 				return property.toString() + i;
 			}
 			int j = i == 1 ? 0 : 1;
-			if (!propertyToName.containsKey(property)){
+			if (!propertyToName.containsKey(property)) {
 				propertyToName.put(property, new String[2]);
 			}
 			propertyToName.get(property)[i] = getPropertyVertex(property.getInverseProperty(), j);
