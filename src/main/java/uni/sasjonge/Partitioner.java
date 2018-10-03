@@ -45,7 +45,7 @@ public class Partitioner {
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime)/1000000 + "ms");
 
 			long reduceStartTime = System.nanoTime();
-			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,2);
+			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,3);
 			//OWLOntology ontology = (new OntologyReducer(manager,loadedOnt)).removeHighestLevelConc(3);
 
 			long reduceEndTime = System.nanoTime();

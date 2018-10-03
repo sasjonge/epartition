@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,8 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -47,6 +50,8 @@ public class GraphExporter {
 
 	public static ManchesterOWLSyntaxOWLObjectRendererImpl manchester = new ManchesterOWLSyntaxOWLObjectRendererImpl();
 	static Map<String, String> mapVertexToManchester;
+
+	static OntologyHierarchy ontHierachy;
 
 	/**
 	 * Exports g in graphML to outputPath Every node and edge is shown as is in the
@@ -110,7 +115,7 @@ public class GraphExporter {
 
 		// Add vertexes for all connected components
 		ci.connectedSets().stream().forEach(cc -> {
-			String name = "Partition " + i + "//" + getFilteredSubConceptString(cc, ontology, 3);
+			String name = getFilteredSubConceptString(cc, 3);
 			ccToVertexName.put(cc, name);
 			ccGraph.addVertex(name);
 			i++;
@@ -199,7 +204,7 @@ public class GraphExporter {
 		// Add vertexes for all connected components
 		ci.connectedSets().stream().forEach(cc -> {
 			if (hasAxioms(cc, vertexToAxiom)) {
-				String name = "Partition " + i + "//" + getFilteredSubConceptString(cc, ontology, 3);
+				String name = getFilteredSubConceptString(cc, 3);
 				ccToVertexName.put(cc, name);
 				ccGraph.addVertex(name);
 				ccWithAxioms.add(cc);
@@ -218,31 +223,48 @@ public class GraphExporter {
 		// Go through each cc and find corresponding property nodes (same prefix, ending
 		// with 0 or 1)
 		// remember the name of properties for the edges
-		Map<DefaultEdge, List<String>> nameForEdge = new HashMap<>();
+		Map<DefaultEdge, Set<String>> nameForEdge = new HashMap<>();
+		Map<String,Set<String>> ccToProperties = new HashMap<>();
 		ccWithAxioms.stream().forEach(cc -> {
 			cc.stream().forEach(subcon -> {
 				if (subcon.endsWith("0")) {
 					Set<String> correspondingCC = subToCC.get(subcon.substring(0, subcon.length() - 1) + "1");
 					if (correspondingCC != null) {
-						DefaultEdge edge = null;
-						Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(cc),
-								ccToVertexName.get(correspondingCC));
-						if (edgeList.isEmpty()) {
-							edge = ccGraph.addEdge(ccToVertexName.get(cc), ccToVertexName.get(correspondingCC));
+						if (!ccToVertexName.get(cc).equals(ccToVertexName.get(correspondingCC))) {
+							DefaultEdge edge = null;
+							Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(cc),
+									ccToVertexName.get(correspondingCC));
+							if (edgeList.isEmpty()) {
+								// If there are no edges of this type, add one
+								edge = ccGraph.addEdge(ccToVertexName.get(cc), ccToVertexName.get(correspondingCC));
+
+							} else if (edgeList.size() == 1) {
+								// If the edgelist is not empty it should only contain one element.
+								edge = edgeList.iterator().next();
+							}
+
+							// Add the hashset if it doesn't exist already
+							if (nameForEdge.get(edge) == null) {
+								nameForEdge.put(edge, new HashSet<String>());
+							}
+
+							// Then add the name of the edge
+							// System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
+							nameForEdge.get(edge).add(getCleanName(subcon.substring(0, subcon.length() - 1)));
+
 						} else {
-							edge = edgeList.iterator().next();
-						};
-						
-						if (nameForEdge.get(edge) == null) {
-							nameForEdge.put(edge, new ArrayList<String>());
+							String ccName = ccToVertexName.get(cc);
+							if(ccToProperties.get(ccName) == null) {
+								ccToProperties.put(ccName, new HashSet<>());
+							}
+							ccToProperties.get(ccName).add(subcon);
 						}
-						System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
-						nameForEdge.get(edge).add(getCleanName(subcon.substring(0, subcon.length() - 1)));
 					}
 				}
 			});
 		});
-		System.out.println("/////////" + nameForEdge.toString() + "/////");
+		
+		Map<String,String> vertexToPropertiesString = createPropertyStringForVertex(ccToProperties);
 
 		/////////////////////////////////////////////////////////////////////////
 		// Export the Graph
@@ -252,7 +274,8 @@ public class GraphExporter {
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
 			public String getName(String vertex) {
-				return getCleanName(vertex);
+				String propName = vertexToPropertiesString.get(vertex);
+				return getCleanName(vertex) + (propName == null? "" : propName);
 			}
 		});
 		// Register additional name attribute for edges
@@ -260,7 +283,7 @@ public class GraphExporter {
 
 			@Override
 			public String getName(DefaultEdge edge) {
-				return nameForEdge.get(edge).toString();
+				return getFilteredPropertyString(nameForEdge.get(edge), 3);
 			}
 		});
 
@@ -277,6 +300,19 @@ public class GraphExporter {
 		}
 	}
 
+	private static Map<String, String> createPropertyStringForVertex(Map<String, Set<String>> ccToProperties) {
+		Map<String,String> toReturn = new HashMap<>();
+		
+		StringBuilder builder = new StringBuilder();
+		for(Entry<String,Set<String>> entry : ccToProperties.entrySet()) {
+			builder.append("\n--" + entry.getValue().size() + " properties--\n");
+			
+			toReturn.put(entry.getKey(), builder.toString());
+		}
+		
+		return toReturn;
+	}
+
 	private static boolean hasAxioms(Set<String> cc, Map<String, OWLAxiom> vertexToAxiom) {
 
 		for (String vert : cc) {
@@ -287,7 +323,7 @@ public class GraphExporter {
 		return false;
 	}
 
-	static boolean hasClasses = true;
+	static boolean hasEntities = true;
 
 	private static String getFilteredSubConceptString(Set<String> cc, OWLOntology ontology) {
 		StringBuilder builder = new StringBuilder();
@@ -295,18 +331,18 @@ public class GraphExporter {
 
 		// Descend into the classes to find classnames
 		int depth = 0;
-		hasClasses = true;
-		while (hasClasses) {
-			if (depthToClasses.get(depth) != null) {
-				depthToClasses.get(depth).stream().forEach(cls -> {
+		hasEntities = true;
+		while (hasEntities) {
+			if (ontHierachy.getClassesOfDepth(depth) != null) {
+				ontHierachy.getClassesOfDepth(depth).stream().forEach(cls -> {
 					if (cc.contains(cls.toString())) {
 						builder.append(getCleanName(cls.toString()));
 						builder.append("\n");
-						hasClasses = false;
+						hasEntities = false;
 					}
 				});
 			} else {
-				hasClasses = false;
+				hasEntities = false;
 			}
 			depth++;
 		}
@@ -314,39 +350,94 @@ public class GraphExporter {
 		return builder.toString();
 	}
 
-	private static String getFilteredSubConceptString(Set<String> cc, OWLOntology ontology, int maxNumberOfConcepts) {
+	private static String getFilteredSubConceptString(Set<String> cc, int maxNumberOfConcepts) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Classes:\n");
+		builder.append("--" + cc.size() + " classes--\n");
 
 		// Descend into the classes to find classnames
 		int depth = 0;
 		int classesInString = 0;
 		boolean addLastClass = false;
-		hasClasses = true;
-		while (hasClasses) {
-			if (depthToClasses.get(depth) != null) {
-				for (OWLClass cls : depthToClasses.get(depth)) {
+		boolean foundAnother = false;
+		hasEntities = true;
+		String className = "";
+		while (hasEntities) {
+			if (ontHierachy.getClassesOfDepth(depth) != null) {
+				for (OWLClass cls : ontHierachy.getClassesOfDepth(depth)) {
 					if (cc.contains(cls.toString())) {
-						builder.append(getCleanName(cls.toString()));
-						builder.append("\n");
-						classesInString++;
+						className = getCleanName(cls.toString());
+						if (!addLastClass) {
+							builder.append(className);
+							builder.append("\n");
+							classesInString++;
+						} else {
+							foundAnother = true;
+						}
 						// add dots and the last element
 						if (classesInString > maxNumberOfConcepts - 2) {
-							if (depthToClasses.get(depth).size() > maxNumberOfConcepts - 1) {
+							if (ontHierachy.getClassesOfDepth(depth).size() > maxNumberOfConcepts - 1) {
 								addLastClass = true;
 							}
-							break;
 						}
-						hasClasses = false;
+						hasEntities = false;
 					}
 				}
 				;
 			}
 
-			if (addLastClass) {
+			if (addLastClass && foundAnother) {
 				builder.append("...\n");
-				List<OWLClass> classes = depthToClasses.get(depth);
-				builder.append(classes.get(classes.size() - 1));
+				builder.append(className);
+			}
+
+			depth++;
+		}
+
+		return builder.toString();
+	}
+
+	private static String getFilteredPropertyString(Set<String> cc, int maxNumberOfConcepts) {
+		StringBuilder builder = new StringBuilder();
+
+		// Descend into the classes to find classnames
+		int depth = 0;
+		int classesInString = 0;
+		boolean addLastRoles = false;
+		boolean foundAnother = false;
+		hasEntities = true;
+		String roleName = "";
+		while (hasEntities && depth <= ontHierachy.getHighestPropertyDepth()) {
+			System.out.println(depth);
+			if (ontHierachy.getPropertiesOfDepth(depth) != null) {
+				System.out.println("RoleList: " + cc.toString());
+				for (OWLObjectProperty cls : ontHierachy.getPropertiesOfDepth(depth)) {
+					System.out.println("Testing for " + cls);
+
+					if (cc.contains(getCleanName(cls.toString()))) {
+						roleName = getCleanName(cls.toString());
+
+						if (!addLastRoles) {
+							builder.append(roleName);
+							builder.append("\n");
+							classesInString++;
+						} else {
+							foundAnother = true;
+						}
+						// add dots and the last element
+						if (classesInString > maxNumberOfConcepts - 2) {
+							if (ontHierachy.getPropertiesOfDepth(depth).size() > maxNumberOfConcepts - 1) {
+								addLastRoles = true;
+							}
+						}
+						hasEntities = false;
+					}
+				}
+				;
+			}
+
+			if (addLastRoles && foundAnother) {
+				builder.append("...\n");
+				builder.append(addLastRoles);
 			}
 
 			depth++;
@@ -398,9 +489,12 @@ public class GraphExporter {
 			cc.stream().forEach(subcon -> {
 				if (subcon.endsWith("0")) {
 					Set<String> correspondingCC = subToCC.get(subcon.substring(0, subcon.length() - 1) + "1");
-					if (correspondingCC != null) {
+					if (correspondingCC != null
+							&& !ccToVertexName.get(cc).equals(ccToVertexName.get(correspondingCC))) {
 						DefaultEdge edge = ccGraph.addEdge(ccToVertexName.get(cc), ccToVertexName.get(correspondingCC));
 						nameForEdge.put(edge, getCleanName(subcon.substring(0, subcon.length() - 1)));
+					} else {
+						// TODO: Also save roles
 					}
 				}
 			});
@@ -538,42 +632,12 @@ public class GraphExporter {
 		mapVertexToManchester = mapVertexToManchester(ontology);
 
 		try {
-			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-			initDepthToClass(manager, manager.copyOntology(ontology, OntologyCopy.DEEP), 0);
 
+			ontHierachy = new OntologyHierarchy(ontology);
 			// System.out.println(depthToClasses);
 		} catch (OWLOntologyCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-	}
-
-	static Map<Integer, List<OWLClass>> depthToClasses = new HashMap<>();
-	static boolean somethingChanged = false;
-
-	private static void initDepthToClass(OWLOntologyManager manager, OWLOntology ont, int depth) {
-		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
-		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
-		OWLDataFactory df = manager.getOWLDataFactory();
-
-		List<OWLClass> cls = reasoner.getSubClasses(df.getOWLThing(), true).entities().collect(Collectors.toList());
-
-		if (!cls.isEmpty()) {
-			OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
-			cls.stream().forEach(e -> {
-				if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
-					somethingChanged = true;
-					e.accept(remover);
-				}
-			});
-			manager.applyChanges(remover.getChanges());
-			remover.reset(); // TODO: Remove if not needed
-
-			depthToClasses.put(depth, cls);
-			if (somethingChanged) {
-				somethingChanged = false;
-				initDepthToClass(manager, ont, depth + 1);
-			}
 		}
 	}
 
