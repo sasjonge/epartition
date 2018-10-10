@@ -20,15 +20,6 @@ import uni.sasjonge.utils.OntologyReducer;
 
 public class Partitioner {
 	
-	// The output path for the graph
-	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/test.graphml";
-	
-	// The input ontology
-	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
-	//static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
-	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/partitioner_test.owl";
-	// static final String INPUT_ONTOLOGY = "file:/home/sascha/pepper_dialog/ros_dep/src/knowrob/knowrob_household/owl/kitchen_items.owl";
-	// SNOMED
 	
 	public static void main(String[] args) {
 		long startTime = System.nanoTime();
@@ -40,13 +31,12 @@ public class Partitioner {
 		try {
 			// Load the input ontology
 			long loadStartTime = System.nanoTime();
-			OWLOntology loadedOnt = manager.loadOntology(IRI.create(INPUT_ONTOLOGY));
+			OWLOntology loadedOnt = manager.loadOntology(IRI.create(Settings.INPUT_ONTOLOGY));
 			long loadEndTime = System.nanoTime();
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime)/1000000 + "ms");
 
 			long reduceStartTime = System.nanoTime();
-			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,2);
-			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,2);
+			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,Settings.LAYERS_TO_REMOVE);
 			//OWLOntology ontology = (new OntologyReducer(manager,loadedOnt)).removeHighestLevelConc(3);
 
 			long reduceEndTime = System.nanoTime();
@@ -72,7 +62,7 @@ public class Partitioner {
 			long startGraphTime = System.nanoTime();
 			GraphExporter.init(ontology);
 			//GraphExporter.exportCCStructureGraphSimple(pc.g, ontology, GRAPH_OUTPUT_PATH);
-			GraphExporter.exportCCStructureGraphSimpleHideAxiomLestt(pc.g, ontology, pc.vertexToAxiom, GRAPH_OUTPUT_PATH);
+			GraphExporter.exportCCStructureGraph(pc.g, ontology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH);
 			// GraphExporter.exportCCStructureGraphWithAllSubConceptsAndAx(pc.g, pc.vertexToAxiom, GRAPH_OUTPUT_PATH);
 			//GraphExporter.exportComplexGraph(pc.g, GRAPH_OUTPUT_PATH);
 			long endGraphTime = System.nanoTime();

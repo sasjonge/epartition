@@ -94,7 +94,6 @@ public class OntologyHierarchy {
 		List<OWLObjectPropertyExpression> rolesToSave = new ArrayList<>();
 
 		if (properties.size() != 2) {
-			System.out.println(properties.toString());
 			rolesToSave.clear();
 			OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
 			properties.stream().forEach(e -> {
