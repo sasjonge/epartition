@@ -275,6 +275,7 @@ public class GraphExporter {
 			@Override
 			public String getName(String vertex) {
 				String propName = vertexToPropertiesString.get(vertex);
+				System.out.println("pName: " + vertexToPropertiesString.toString());
 				return getCleanName(vertex) + (propName == null? "" : propName);
 			}
 		});
@@ -306,6 +307,10 @@ public class GraphExporter {
 		StringBuilder builder = new StringBuilder();
 		for(Entry<String,Set<String>> entry : ccToProperties.entrySet()) {
 			builder.append("\n--" + entry.getValue().size() + " properties--\n");
+			
+			for(String prop : entry.getValue()) {
+				builder.append(getCleanName(prop.substring(0,prop.length()-1)) + "\n");
+			}
 			
 			toReturn.put(entry.getKey(), builder.toString());
 		}
@@ -383,6 +388,8 @@ public class GraphExporter {
 					}
 				}
 				;
+			} else {
+				hasEntities = false;
 			}
 
 			if (addLastClass && foundAnother) {

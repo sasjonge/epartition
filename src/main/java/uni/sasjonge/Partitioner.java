@@ -24,8 +24,8 @@ public class Partitioner {
 	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/test.graphml";
 	
 	// The input ontology
-	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
-	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
+	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
+	//static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/partitioner_test.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/pepper_dialog/ros_dep/src/knowrob/knowrob_household/owl/kitchen_items.owl";
 	// SNOMED
@@ -45,7 +45,8 @@ public class Partitioner {
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime)/1000000 + "ms");
 
 			long reduceStartTime = System.nanoTime();
-			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,3);
+			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,2);
+			OWLOntology ontology = OntologyReducer.removeHighestLevelConc(manager,loadedOnt,2);
 			//OWLOntology ontology = (new OntologyReducer(manager,loadedOnt)).removeHighestLevelConc(3);
 
 			long reduceEndTime = System.nanoTime();
@@ -58,6 +59,7 @@ public class Partitioner {
 			System.out.println("Partitioning took " + (endPartTime - startPartTime)/1000000 + "ms");
 			
 			// Export the onotologys
+			//partitionedOntologies.stream().forEach(t -> {
 			//partitionedOntologies.stream().forEach(t -> {
 			//	try {
 			//		manager.saveOntology(t);
