@@ -12,6 +12,7 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
+import org.semanticweb.owlapi.model.parameters.OntologyCopy;
 import org.xml.sax.SAXException;
 
 import uni.sasjonge.partitioning.PartitioningCore;
@@ -28,10 +29,15 @@ public class Partitioner {
 		// Initizalize the partioning algorithm
 		PartitioningCore pc = new PartitioningCore();
 		
+		// Save old ontology
+		OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
+		
 		try {
 			// Load the input ontology
 			long loadStartTime = System.nanoTime();
 			OWLOntology loadedOnt = manager.loadOntology(IRI.create(Settings.INPUT_ONTOLOGY));
+			OWLOntology oldOntology = manager2.copyOntology(loadedOnt,OntologyCopy.DEEP);
+
 			long loadEndTime = System.nanoTime();
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime)/1000000 + "ms");
 
@@ -44,6 +50,7 @@ public class Partitioner {
 			
 			long startPartTime = System.nanoTime();
 			// Call the partitioning algorithm
+			System.out.println(ontology);
 			List<OWLOntology> partitionedOntologies = pc.partition(ontology);
 			long endPartTime = System.nanoTime();
 			System.out.println("Partitioning took " + (endPartTime - startPartTime)/1000000 + "ms");
@@ -60,11 +67,9 @@ public class Partitioner {
 			
 			// Export the graph
 			long startGraphTime = System.nanoTime();
-			GraphExporter.init(ontology);
-			//GraphExporter.exportCCStructureGraphSimple(pc.g, ontology, GRAPH_OUTPUT_PATH);
-			GraphExporter.exportCCStructureGraph(pc.g, ontology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH);
-			// GraphExporter.exportCCStructureGraphWithAllSubConceptsAndAx(pc.g, pc.vertexToAxiom, GRAPH_OUTPUT_PATH);
-			//GraphExporter.exportComplexGraph(pc.g, GRAPH_OUTPUT_PATH);
+			GraphExporter.init(oldOntology);
+			GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH);
+			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime)/1000000 + "ms");
 		} catch (OWLOntologyCreationException e) {

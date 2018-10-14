@@ -3,8 +3,11 @@ package uni.sasjonge.utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -23,31 +26,42 @@ import org.semanticweb.owlapi.util.OWLEntityRemover;
 
 public class OntologyHierarchy {
 
-	static Map<Integer, List<OWLClass>> depthToClasses = new HashMap<>();
-	static Map<Integer, List<OWLObjectProperty>> depthToProperties = new HashMap<>();
-	static boolean somethingChanged = false;
+	Map<Integer, List<OWLClass>> depthToClasses = new HashMap<>();
+	Map<Integer, List<OWLObjectProperty>> depthToProperties = new HashMap<>();
+	boolean somethingChanged = false;
 
-	static Map<OWLClass, OWLClass> parentClassOf = new HashMap<>();
-	static Map<OWLObjectProperty, OWLObjectProperty> parentPropertyOf = new HashMap<>();
+	Map<OWLClass, OWLClass> classToParent = new HashMap<>();
+	Map<OWLObjectProperty, OWLObjectProperty> propertyToParent = new HashMap<>();
+	
+	Map<String, String> classToParentString = new HashMap<>();
+	Map<String, String> propertyToParentString = new HashMap<>();
+	
+	Map<String,Set<String>> parentToClassesString = new HashMap<>();
+	Map<String,Set<String>> parentToPropertiesString = new HashMap<>();
 
 	public OntologyHierarchy(OWLOntology ontology) throws OWLOntologyCreationException {
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
 		initDepthToClass(manager, manager.copyOntology(ontology, OntologyCopy.DEEP), 0);
 		initDepthToRoles(manager2, manager2.copyOntology(ontology, OntologyCopy.DEEP), 0);
+		
+		parentToClassesString = collectStringMapByValue(classToParentString);
+		parentToPropertiesString = collectStringMapByValue(propertyToParentString);
+				
 	}
 
 	private void initDepthToClass(OWLOntologyManager manager, OWLOntology ont, int depth) {
 		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
 		OWLDataFactory df = manager.getOWLDataFactory();
-
+		
 		List<OWLClass> classes = reasoner.getSubClasses(df.getOWLThing(), true).entities().collect(Collectors.toList());
 
 		// save parent structure
 		for (OWLClass cls : classes) {
 			reasoner.getSubClasses(cls, true).entities().forEach(subCls -> {
-				parentClassOf.put(subCls, cls);
+				classToParent.put(subCls, cls);
+				classToParentString.put(OntologyDescriptor.getCleanName(subCls.toString()), OntologyDescriptor.getCleanName(cls.toString()));
 			});
 		}
 
@@ -82,9 +96,13 @@ public class OntologyHierarchy {
 		for (OWLObjectPropertyExpression property : properties) {
 			if (!property.getInverseProperty().isOWLObjectProperty()) {
 
-				reasoner.getSubObjectProperties(property, true).entities().forEach(subCls -> {
-					if (!subCls.getInverseProperty().isOWLObjectProperty()) {
-						parentPropertyOf.put(subCls.asOWLObjectProperty(), property.asOWLObjectProperty());
+				reasoner.getSubObjectProperties(property, true).entities().forEach(subProp -> {
+					if (!subProp.getInverseProperty().isOWLObjectProperty()) {
+						OWLObjectProperty subPropAsProp = subProp.asOWLObjectProperty();
+						OWLObjectProperty propAsProp = property.asOWLObjectProperty();
+						propertyToParent.put(subPropAsProp, propAsProp);
+						propertyToParentString.put(OntologyDescriptor.getCleanName(subPropAsProp.toString()), 
+								OntologyDescriptor.getCleanName(propAsProp.toString()));
 					}
 				});
 
@@ -134,11 +152,42 @@ public class OntologyHierarchy {
 	}
 	
 	public OWLClass getOWLClassParent(OWLClass cls) {
-		return parentClassOf.get(cls);
+		return classToParent.get(cls);
 	}
 	
 	public OWLObjectProperty getOWLPropertyParent(OWLObjectProperty cls) {
-		return parentPropertyOf.get(cls);
+		return propertyToParent.get(cls);
+	}
+	
+	public static Map<String,Set<String>> collectStringMapByValue(Map<String,String> aToB) {
+		Map<String,Set<String>> bToAList = new HashMap<>();
+		
+		for(Entry<String, String> entry : aToB.entrySet()) {
+			// Add node to corresponding Group
+			String b = entry.getValue();
+			if (!bToAList.containsKey(b)){
+				bToAList.put(b, new HashSet<>());
+			}
+			bToAList.get(b).add(entry.getKey());
+		}
+		
+		return bToAList;
+	}
+
+	public Map<String, String> getClassToParentString() {
+		return classToParentString;
+	}
+
+	public Map<String, String> getPropertyToParentString() {
+		return propertyToParentString;
+	}
+
+	public Map<String, Set<String>> getParentToClassesString() {
+		return parentToClassesString;
+	}
+
+	public Map<String, Set<String>> getParentToPropertiesString() {
+		return parentToPropertiesString;
 	}
 
 }

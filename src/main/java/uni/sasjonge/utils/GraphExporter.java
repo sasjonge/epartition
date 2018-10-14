@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.jgrapht.Graph;
@@ -24,10 +25,12 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
 import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxObjectRenderer;
 import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxRenderer;
+import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
@@ -39,6 +42,8 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
 import org.semanticweb.owlapi.util.OWLEntityRemover;
+
+import com.google.common.hash.HashCode;
 
 /**
  * Utility class for different graph exporting methods
@@ -102,6 +107,11 @@ public class GraphExporter {
 	public static void exportCCStructureGraph(Graph<String, DefaultEdge> g, OWLOntology ontology,
 			Map<String, OWLAxiom> vertexToAxiom, String outputPath) throws ExportException {
 
+		// Classes and individuals of the given ontology
+		Set<String> classes = getClassesForOntology(ontology);
+
+		Set<String> individuals = getIndividualsForOntology(ontology);
+
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
 
@@ -114,12 +124,43 @@ public class GraphExporter {
 		// CC's with axioms
 		List<Set<String>> ccWithAxioms = new ArrayList<>();
 
+		// Map the vertexes to the corresponding set of axioms, classes, individuals
+		Map<String, Set<String>> vertexToClasses = new HashMap<>();
+		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
+		final Map<String, Set<String>> vertexToAxioms = getAxiomsToVertex(ci.connectedSets(), vertexToAxiom);
+
+		// Map vertexes to classes
+		// Map vertexes to individuals
+		for (Set<String> cc : ci.connectedSets()) {
+
+			// classes and individuals
+			// start with same baseset (alle elements of the cc)
+			Set<String> classesForThisCC = cc.stream().map(e -> 
+				OntologyDescriptor.getCleanName(e)
+			).collect(Collectors.toSet());		
+			Set<String> individualsForThisCC = new HashSet<>(classesForThisCC);
+
+			classesForThisCC.retainAll(classes);
+
+			if (classesForThisCC.size() > 0) {
+				vertexToClasses.put(cc.hashCode() + "", classesForThisCC);
+			}
+
+			// individuals
+			individualsForThisCC.retainAll(individuals);
+
+			if (individualsForThisCC.size() > 0) {
+				vertexToIndividuals.put(cc.hashCode() + "", individualsForThisCC);
+			}
+		}
+
 		// Add vertexes for all connected components
 		ci.connectedSets().stream().forEach(cc -> {
-			if (hasAxioms(cc, vertexToAxiom)) {
-				String name = ontDescriptor.getFilteredSubConceptString(cc, 3);
-				ccToVertexName.put(cc, name);
-				ccGraph.addVertex(name);
+			// System.out
+			//		.println("Number of axioms for " + cc.hashCode() + " is " + vertexToAxioms.get(cc.hashCode() + ""));
+			if (vertexToAxioms.get(cc.hashCode() + "") != null) {
+				ccToVertexName.put(cc, cc.hashCode() + "");
+				ccGraph.addVertex(cc.hashCode() + "");
 				ccWithAxioms.add(cc);
 				i++;
 			}
@@ -137,7 +178,7 @@ public class GraphExporter {
 		// with 0 or 1)
 		// remember the name of properties for the edges
 		Map<DefaultEdge, Set<String>> nameForEdge = new HashMap<>();
-		Map<String,Set<String>> ccToProperties = new HashMap<>();
+		Map<String, Set<String>> vertexToProperties = new HashMap<>();
 		ccWithAxioms.stream().forEach(cc -> {
 			cc.stream().forEach(subcon -> {
 				if (subcon.endsWith("0")) {
@@ -163,20 +204,20 @@ public class GraphExporter {
 
 							// Then add the name of the edge
 							// System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
-							nameForEdge.get(edge).add(OntologyDescriptor.getCleanName(subcon.substring(0, subcon.length() - 1)));
+							nameForEdge.get(edge)
+									.add(OntologyDescriptor.getCleanName(subcon.substring(0, subcon.length() - 1)));
 
 						} else {
 							String ccName = ccToVertexName.get(cc);
-							if(ccToProperties.get(ccName) == null) {
-								ccToProperties.put(ccName, new HashSet<>());
+							if (vertexToProperties.get(ccName) == null) {
+								vertexToProperties.put(ccName, new HashSet<>());
 							}
-							ccToProperties.get(ccName).add(subcon);
+							vertexToProperties.get(ccName).add(OntologyDescriptor.getCleanName(subcon.substring(0, subcon.length() - 1)));
 						}
 					}
 				}
 			});
 		});
-		
 
 		/////////////////////////////////////////////////////////////////////////
 		// Export the Graph
@@ -186,7 +227,8 @@ public class GraphExporter {
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
 			public String getName(String vertex) {
-				return ontDescriptor.getLabelForConnectedComponent(ccToProperties, vertex);
+				return ontDescriptor.getLabelForConnectedComponent(vertexToAxioms.get(vertex).size(),
+						vertexToClasses.get(vertex), vertexToProperties.get(vertex), vertexToIndividuals.get(vertex));
 			}
 		});
 		// Register additional name attribute for edges
@@ -211,14 +253,31 @@ public class GraphExporter {
 		}
 	}
 
-	private static boolean hasAxioms(Set<String> cc, Map<String, OWLAxiom> vertexToAxiom) {
+	private static Map<String, Set<String>> getAxiomsToVertex(List<Set<String>> connectedSets,
+			Map<String, OWLAxiom> vertexToAxiom) {
 
-		for (String vert : cc) {
-			if (vertexToAxiom.containsKey(vert)) {
-				return true;
+		Map<String, Set<String>> vertexToAxioms = new HashMap<>();
+		for (Set<String> cc : connectedSets) {
+			for (String vert : cc) {
+				if (vertexToAxiom.get(vert) != null) {
+					if (!vertexToAxioms.containsKey(cc.hashCode() + "")) {
+						vertexToAxioms.put(cc.hashCode() + "", new HashSet<>());
+					}
+					vertexToAxioms.get(cc.hashCode() + "").add(vertexToAxiom.get(vert).toString());
+				}
 			}
 		}
-		return false;
+		return vertexToAxioms;
+	}
+
+	private static Set<String> getClassesForOntology(OWLOntology ontology) {
+		return ontology.classesInSignature().map(e -> OntologyDescriptor.getCleanName(e.toString()))
+				.collect(Collectors.toSet());
+	}
+
+	private static Set<String> getIndividualsForOntology(OWLOntology ontology) {
+		return ontology.individualsInSignature().map(e -> OntologyDescriptor.getCleanName(e.toString()))
+				.collect(Collectors.toSet());
 	}
 
 	/**
