@@ -80,6 +80,7 @@ import com.fasterxml.jackson.databind.deser.impl.ExternalTypeHandler.Builder;
 
 import uk.ac.manchester.cs.owl.owlapi.OWLClassAssertionAxiomImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNaryIndividualAxiomImpl;
+import uni.sasjonge.utils.OntologyDescriptor;
 
 /**
  * 
@@ -92,7 +93,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLNaryIndividualAxiomImpl;
 public class PartitioningCore {
 
 	public Graph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
-	public Map<String, OWLAxiom> vertexToAxiom = new HashMap<>();
+	public Map<String, Set<OWLAxiom>> vertexToAxiom = new HashMap<>();
 
 	/**
 	 * E-part Algorithm: Partitions the given ontology in several smaller ontologies
@@ -115,15 +116,15 @@ public class PartitioningCore {
 		// Vertex: ObjectProperties
 		ontology.objectPropertiesInSignature().forEach(objProp -> {
 			if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
-				g.addVertex(objProp.toString() + "0");
-				g.addVertex(objProp.toString() + "1");
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + "0");
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + "1");
 			}
 		});
 
 		// Vertex: DataProperties
 		ontology.dataPropertiesInSignature().forEach(dataProp -> {
 			if (!dataProp.isOWLTopDataProperty() && !dataProp.isTopEntity()) {
-				g.addVertex(dataProp.toString());
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(dataProp)+ "0");
 			}
 		});
 
@@ -131,13 +132,13 @@ public class PartitioningCore {
 		ontology.logicalAxioms().forEach(a -> {
 			a.nestedClassExpressions().forEach(nested -> {
 				if (!nested.isOWLThing()) {
-					g.addVertex(nested.toString());
+					g.addVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
 				}
 			});
 		});
 		// Vertex: Individuals
 		ontology.individualsInSignature().forEach(indiv -> {
-			g.addVertex(indiv.toString());
+			g.addVertex(OntologyDescriptor.getCleanNameOWLObj(indiv));
 		});
 
 		long addVertexEndTime = System.nanoTime();
@@ -196,14 +197,14 @@ public class PartitioningCore {
 
 		// ObjectComplementOf
 		case OBJECT_COMPLEMENT_OF:
-			g.addEdge(expr.toString(), ((OWLObjectComplementOf) expr).getOperand().toString());
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(((OWLObjectComplementOf) expr).getOperand()));
 			break;
 
 		// 2ary logical operators
 		case OBJECT_INTERSECTION_OF:
 		case OBJECT_UNION_OF:
 			((OWLNaryBooleanClassExpression) expr).getOperandsAsList().stream().forEach(sub -> {
-				g.addEdge(expr.toString(), sub.toString());
+				g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(sub));
 			});
 			break;
 
@@ -216,16 +217,16 @@ public class PartitioningCore {
 			OWLQuantifiedObjectRestriction restriction = (OWLQuantifiedObjectRestriction) expr;
 			OWLObjectPropertyExpression property = restriction.getProperty();
 			OWLClassExpression con = restriction.getFiller();
-			g.addEdge(expr.toString(), getPropertyVertex(property, 0));
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(property, 0));
 			if (!((con.isOWLThing() || con.isOWLNothing()))) {
-				g.addEdge(getPropertyVertex(property, 1), con.toString());
+				g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(con));
 			}
 			break;
 
 		// ObjectOneOf
 		case OBJECT_ONE_OF:
 			((OWLObjectOneOf) expr).operands().forEach(indiv -> {
-				g.addEdge(expr.toString(), indiv.toString());
+				g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(indiv));
 			});
 			break;
 
@@ -238,8 +239,8 @@ public class PartitioningCore {
 		// ObjectHasValue
 		case OBJECT_HAS_VALUE:
 			OWLObjectHasValue hasVal = (OWLObjectHasValue) expr;
-			g.addEdge(getPropertyVertex(hasVal.getProperty(), 1), hasVal.getFiller().toString());
-			g.addEdge(expr.toString(), getPropertyVertex(hasVal.getProperty(), 0));
+			g.addEdge(getPropertyVertex(hasVal.getProperty(), 1), OntologyDescriptor.getCleanNameOWLObj(hasVal.getFiller()));
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(hasVal.getProperty(), 0));
 			break;
 
 		// ------------------------------ Data Restrictions ---------------------------
@@ -250,12 +251,12 @@ public class PartitioningCore {
 		case DATA_MIN_CARDINALITY:
 			OWLQuantifiedDataRestriction dataRestriction = (OWLQuantifiedDataRestriction) expr;
 			OWLPropertyExpression dProperty = dataRestriction.getProperty();
-			g.addEdge(expr.toString(), dProperty.toString());
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dProperty) + "0");
 			break;
 
 		case DATA_HAS_VALUE:
 			OWLDataHasValue dHasVal = (OWLDataHasValue) expr;
-			g.addEdge(expr.toString(), dHasVal.getProperty().toString());
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dHasVal.getProperty()) + "0");
 			break;
 
 		default:
@@ -282,19 +283,19 @@ public class PartitioningCore {
 
 		case "SubClassOf":
 			OWLSubClassOfAxiom subCOf = (OWLSubClassOfAxiom) ax;
-			vertex = subCOf.getSubClass().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass());
 			if (!subCOf.getSuperClass().isOWLThing()) {
-				g.addEdge(vertex, subCOf.getSuperClass().toString());
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSuperClass()));
 			}
 			break;
 
 		case "EquivalentClasses":
 		case "DisjointClasses":
 			OWLNaryClassAxiom naryaxiom = (OWLNaryClassAxiom) ax;
-			vertex = naryaxiom.getOperandsAsList().get(0).toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(naryaxiom.getOperandsAsList().get(0));
 			List<String> vertexList = new ArrayList<>();
 			for (OWLClassExpression cexp : naryaxiom.getOperandsAsList()) {
-				vertexList.add(cexp.toString());
+				vertexList.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			}
 			connect_vertexes_stepwise(vertexList);
 			break;
@@ -303,10 +304,10 @@ public class PartitioningCore {
 			OWLDisjointUnionAxiom duax = (OWLDisjointUnionAxiom) ax;
 			List<String> vertexList2 = new ArrayList<>();
 			duax.getOWLDisjointClassesAxiom().classExpressions().forEach(cexp -> {
-				vertexList2.add(cexp.toString());
+				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			});
 			duax.getOWLEquivalentClassesAxiom().classExpressions().forEach(cexp -> {
-				vertexList2.add(cexp.toString());
+				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			});
 			connect_vertexes_stepwise(vertexList2);
 			vertex = vertexList2.get(0);
@@ -317,10 +318,10 @@ public class PartitioningCore {
 			OWLSubObjectPropertyOfAxiom subObjectPropAx = (OWLSubObjectPropertyOfAxiom) ax;
 			OWLObjectPropertyExpression subProp = subObjectPropAx.getSubProperty();
 			OWLObjectPropertyExpression superProp = subObjectPropAx.getSuperProperty();
-			vertex = getPropertyVertex(subProp, 0).toString();
+			vertex = getPropertyVertex(subProp, 0);
 			if (!superProp.isOWLTopObjectProperty()) {
-				g.addEdge(vertex, getPropertyVertex(superProp, 0).toString());
-				g.addEdge(getPropertyVertex(subProp, 1).toString(), getPropertyVertex(superProp, 1).toString());
+				g.addEdge(vertex, getPropertyVertex(superProp, 0));
+				g.addEdge(getPropertyVertex(subProp, 1), getPropertyVertex(superProp, 1));
 			}
 			break;
 
@@ -330,7 +331,10 @@ public class PartitioningCore {
 			int chainLength = propertyChain.size();
 			vertex = getPropertyVertex(propertyChain.get(0), 0);
 			// Link first with superproperty
-			g.addEdge(getPropertyVertex(propertyChain.get(0), 0), getPropertyVertex(propChainAx.getSuperProperty(), 0));
+			String superProp2 = getPropertyVertex(propChainAx.getSuperProperty(), 0);
+			if (!vertex.equals(superProp2)) {
+				g.addEdge(vertex, superProp2);
+			}
 			// Link last with superproperty
 			g.addEdge(getPropertyVertex(propertyChain.get(chainLength - 1), 1),
 					getPropertyVertex(propChainAx.getSuperProperty(), 1));
@@ -367,7 +371,7 @@ public class PartitioningCore {
 			OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
 			vertex = getPropertyVertex(objPropRangeAx.getProperty(), 0);
 			if (!objPropRangeAx.getRange().isOWLThing()) {
-				g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), objPropRangeAx.getRange().toString());
+				g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
 			}
 			break;
 
@@ -375,7 +379,7 @@ public class PartitioningCore {
 			OWLObjectPropertyDomainAxiom objPropDomAx = (OWLObjectPropertyDomainAxiom) ax;
 			vertex = getPropertyVertex(objPropDomAx.getProperty(), 0);
 			if (!objPropDomAx.getDomain().isOWLThing()) {
-				g.addEdge(vertex, objPropDomAx.getDomain().toString());
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(objPropDomAx.getDomain()));
 			}
 			break;
 
@@ -396,17 +400,17 @@ public class PartitioningCore {
 		// ------------------- Data Property Axioms --------------------
 		case "SubDataPropertyOf":
 			OWLSubDataPropertyOfAxiom subDataPropAx = (OWLSubDataPropertyOfAxiom) ax;
-			vertex = subDataPropAx.getSubProperty().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty()) + "0";
 
-			if (subDataPropAx.getSubProperty().isOWLTopObjectProperty()) {
-				g.addEdge(vertex, subDataPropAx.getSuperProperty().toString());
+			if (!subDataPropAx.getSuperProperty().isOWLTopDataProperty()) {
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSuperProperty()) + "0");
 			}
 			break;
 
 		case "EquivalentDataProperties":
 		case "DisjointDataProperties":
 			OWLNaryPropertyAxiom<OWLDataPropertyExpression> naryDataPropAx = (OWLNaryPropertyAxiom<OWLDataPropertyExpression>) ax;
-			List<String> naryDataPropAxNames = naryDataPropAx.properties().map(e -> e.toString())
+			List<String> naryDataPropAxNames = naryDataPropAx.properties().map(e -> OntologyDescriptor.getCleanNameOWLObj(e))
 					.collect(Collectors.toList());
 			vertex = naryDataPropAxNames.get(0);
 			connect_vertexes_stepwise(naryDataPropAxNames);
@@ -414,20 +418,20 @@ public class PartitioningCore {
 
 		case "DataPropertyRange":
 			OWLDataPropertyRangeAxiom dataPropRangeAx = (OWLDataPropertyRangeAxiom) ax;
-			vertex = dataPropRangeAx.getProperty().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropRangeAx.getProperty());
 			break;
 
 		case "DataPropertyDomain":
 			OWLDataPropertyDomainAxiom dataPropDomAx = (OWLDataPropertyDomainAxiom) ax;
-			vertex = dataPropDomAx.getProperty().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getProperty()) + "0";
 			if (!dataPropDomAx.getDomain().isOWLThing()) {
-				g.addEdge(vertex, dataPropDomAx.getDomain().toString());
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getDomain()));
 			}
 			break;
 
 		case "FunctionalDataProperty":
 			OWLFunctionalDataPropertyAxiom funcDataPropAx = (OWLFunctionalDataPropertyAxiom) ax;
-			vertex = funcDataPropAx.getProperty().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(funcDataPropAx.getProperty()) + "0";
 			break;
 
 		// ------------------- Assertions ---------------------
@@ -435,15 +439,17 @@ public class PartitioningCore {
 		case "SameIndividual":
 		case "DifferentIndividuals":
 			OWLNaryIndividualAxiom sameIndivAx = (OWLNaryIndividualAxiomImpl) ax;
-			List<String> listOfIndiv = sameIndivAx.individuals().map(e -> e.toString()).collect(Collectors.toList());
+			List<String> listOfIndiv = sameIndivAx.individuals().map(e -> OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toList());
 			vertex = listOfIndiv.get(0);
 			connect_vertexes_stepwise(listOfIndiv);
 			break;
 
 		case "ClassAssertion":
 			OWLClassAssertionAxiom classAssert = (OWLClassAssertionAxiom) ax;
-			vertex = classAssert.getIndividual().toString();
-			g.addEdge(vertex, classAssert.getClassExpression().toString());
+			vertex = OntologyDescriptor.getCleanNameOWLObj(classAssert.getIndividual());
+			if (!classAssert.getClassExpression().isTopEntity()) {
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(classAssert.getClassExpression()));
+			}
 			break;
 
 		case "ObjectPropertyAssertion":
@@ -451,15 +457,15 @@ public class PartitioningCore {
 			OWLPropertyAssertionAxiom<OWLObjectPropertyExpression, OWLIndividual> objectPropAss = (OWLPropertyAssertionAxiom<OWLObjectPropertyExpression, OWLIndividual>) ax;
 			OWLObjectPropertyExpression property = objectPropAss.getProperty();
 			OWLIndividual subject = objectPropAss.getSubject();
-			vertex = subject.toString();
-			g.addEdge(subject.toString(), getPropertyVertex(property, 0));
-			g.addEdge(getPropertyVertex(property, 1), objectPropAss.getObject().toString());
+			vertex = OntologyDescriptor.getCleanNameOWLObj(subject);
+			g.addEdge(vertex, getPropertyVertex(property, 0));
+			g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(objectPropAss.getObject()));
 			break;
 
 		case "DataPropertyAssertion":
 		case "NegativeDataPropertyAssertion":
 			OWLPropertyAssertionAxiom<OWLDataPropertyExpression, OWLLiteral> dataPropAss = (OWLPropertyAssertionAxiom<OWLDataPropertyExpression, OWLLiteral>) ax;
-			vertex = dataPropAss.getProperty().toString();
+			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropAss.getProperty());
 			break;
 
 		default:
@@ -474,7 +480,10 @@ public class PartitioningCore {
 		// edge = g.addEdge(property, property)
 
 		if (vertex != null) {
-			vertexToAxiom.put(vertex, ax);
+			if(!vertexToAxiom.containsKey(vertex)) {
+				vertexToAxiom.put(vertex, new HashSet<OWLAxiom>());
+			}
+			vertexToAxiom.get(vertex).add(ax);
 		}
 	}
 
@@ -494,7 +503,7 @@ public class PartitioningCore {
 			}
 
 			if (property instanceof OWLObjectProperty) {
-				return property.toString() + i;
+				return OntologyDescriptor.getCleanNameOWLObj(property) + i;
 			}
 			int j = i == 1 ? 0 : 1;
 			if (!propertyToName.containsKey(property)) {

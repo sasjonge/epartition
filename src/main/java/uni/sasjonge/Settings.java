@@ -6,13 +6,15 @@ public class Settings {
 	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/test.graphml";
 	
 	// The input ontology
-	//static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
+	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
 	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/test_output.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/partitioner_test.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/pepper_dialog/ros_dep/src/knowrob/knowrob_household/owl/kitchen_items.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/koala.owl";
-	// SNOMED
+	// static final String INPUT_ONTOLOGY = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
+	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/ncit.national-cancer-institute-thesaurus.47.owl.xml";
+	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
 
 	public static final int LAYERS_TO_REMOVE = 3;
 
@@ -30,5 +32,13 @@ public class Settings {
 	public static final int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 3;
 	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
 
+	static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
+
+	// Should axioms be shown?
+	public static final boolean SHOW_AXIOMS = false;
+	// If yes, how many?
+	public static final int AXIOM_COUNT = 4;
+
+	public static final boolean USE_RDF_LABEL = false;
 	
 }

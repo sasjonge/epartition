@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
@@ -32,105 +33,176 @@ public class OntologyHierarchy {
 
 	Map<OWLClass, OWLClass> classToParent = new HashMap<>();
 	Map<OWLObjectProperty, OWLObjectProperty> propertyToParent = new HashMap<>();
-	
+
 	Map<String, String> classToParentString = new HashMap<>();
 	Map<String, String> propertyToParentString = new HashMap<>();
-	
-	Map<String,Set<String>> parentToClassesString = new HashMap<>();
-	Map<String,Set<String>> parentToPropertiesString = new HashMap<>();
+
+	Map<String, Set<String>> parentToClassesString = new HashMap<>();
+	Map<String, Set<String>> parentToPropertiesString = new HashMap<>();
 
 	public OntologyHierarchy(OWLOntology ontology) throws OWLOntologyCreationException {
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-		OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
-		initDepthToClass(manager, manager.copyOntology(ontology, OntologyCopy.DEEP), 0);
-		initDepthToRoles(manager2, manager2.copyOntology(ontology, OntologyCopy.DEEP), 0);
+		OWLOntology copydOnt = manager.copyOntology(ontology, OntologyCopy.DEEP);
 		
+		System.out.println("STEEEEEP 1x1");
+
+		initDepthToClass(manager, copydOnt, 0);
+
+		System.out.println("STEEEEEP 1x2");
+		
+		initDepthToRoles(manager, copydOnt, 0);
+
+		System.out.println("STEEEEEP 1x3");
 		parentToClassesString = collectStringMapByValue(classToParentString);
+		
+		System.out.println("STEEEEEP 1x4");
 		parentToPropertiesString = collectStringMapByValue(propertyToParentString);
-				
+
 	}
 
 	private void initDepthToClass(OWLOntologyManager manager, OWLOntology ont, int depth) {
 		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
 		OWLDataFactory df = manager.getOWLDataFactory();
+		boolean ontDidChange = true;
 		
-		List<OWLClass> classes = reasoner.getSubClasses(df.getOWLThing(), true).entities().collect(Collectors.toList());
+		System.out.println("STEEEEEP 1x1x1");
+		long startClassDepthTime = System.nanoTime();
 
-		// save parent structure
-		for (OWLClass cls : classes) {
-			reasoner.getSubClasses(cls, true).entities().forEach(subCls -> {
-				classToParent.put(subCls, cls);
-				classToParentString.put(OntologyDescriptor.getCleanName(subCls.toString()), OntologyDescriptor.getCleanName(cls.toString()));
-			});
-		}
+		while (ontDidChange) {
 
-		if (!classes.isEmpty()) {
-			OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
-			classes.stream().forEach(e -> {
-				if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
-					somethingChanged = true;
-					e.accept(remover);
+			ontDidChange = false;
+
+			List<OWLClass> classes = reasoner.getSubClasses(df.getOWLThing(), true).entities()
+					.collect(Collectors.toList());
+
+			// save parent structure
+			for (OWLClass cls : classes) {
+				reasoner.getSubClasses(cls, true).entities().forEach(subCls -> {
+					classToParent.put(subCls, cls);
+					classToParentString.put(OntologyDescriptor.getCleanNameOWLObj(subCls),
+							OntologyDescriptor.getCleanNameOWLObj(cls));
+				});
+			}
+
+			if (!classes.isEmpty()) {
+				OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
+				for (OWLClass e : classes) {
+					if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
+						ontDidChange = true;
+						e.accept(remover);
+					}
 				}
-			});
-			manager.applyChanges(remover.getChanges());
-			remover.reset(); // TODO: Remove if not needed
+				manager.applyChanges(remover.getChanges());
+				remover.reset(); // TODO: Remove if not needed
 
-			depthToClasses.put(depth, classes);
-			if (somethingChanged) {
-				somethingChanged = false;
-				initDepthToClass(manager, ont, depth + 1);
+				depthToClasses.put(depth, classes);
+
+				depth++;
 			}
 		}
+		long endClassDepthTime = System.nanoTime();
+		System.out.println("Graph building took " + (endClassDepthTime - startClassDepthTime)/1000000 + "ms");
 	}
+	
+//	private void initDepthToClassNew(OWLOntologyManager manager, OWLOntology ont, int depth) {
+//		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
+//		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
+//		OWLDataFactory df = manager.getOWLDataFactory();
+//		boolean ontDidChange = true;
+//		
+//		System.out.println("STEEEEEP 1x1x1");
+//		long startClassDepthTime = System.nanoTime();
+//		
+//		Set<OWLClassExpression> topClassesThisLevel = new HashSet<>();
+//		topClassesThisLevel.add(df.getOWLThing());
+//
+//		while (ontDidChange) {
+//
+//			ontDidChange = false;
+//
+//			for (OWLClassExpression expr : topClassesThisLevel)
+//			//List<OWLClass> classes = reasoner.getSubClasses(topClassesThisLevel, true).entities()
+//					.collect(Collectors.toList());
+//
+//			// save parent structure
+//			for (OWLClass cls : classes) {
+//				reasoner.getSubClasses(cls, true).entities().forEach(subCls -> {
+//					classToParent.put(subCls, cls);
+//					classToParentString.put(OntologyDescriptor.getCleanNameOWLObj(subCls),
+//							OntologyDescriptor.getCleanNameOWLObj(cls));
+//				});
+//			}
+//
+//			if (!classes.isEmpty()) {
+//				OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
+//				for (OWLClass e : classes) {
+//					if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
+//						ontDidChange = true;
+//						e.accept(remover);
+//					}
+//				}
+//				manager.applyChanges(remover.getChanges());
+//				remover.reset(); // TODO: Remove if not needed
+//
+//				depthToClasses.put(depth, classes);
+//
+//				depth++;
+//			}
+//		}
+//		long endClassDepthTime = System.nanoTime();
+//		System.out.println("Graph building took " + (endClassDepthTime - startClassDepthTime)/1000000 + "ms");
+//	}
 
 	private void initDepthToRoles(OWLOntologyManager manager, OWLOntology ont, int depth) {
 		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
 		OWLDataFactory df = manager.getOWLDataFactory();
-
-		List<OWLObjectPropertyExpression> properties = reasoner
-				.getSubObjectProperties(df.getOWLTopObjectProperty(), true).entities().collect(Collectors.toList());
-
+		OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
+		
+		
 		// save parent role structure
-		for (OWLObjectPropertyExpression property : properties) {
+		ont.objectPropertiesInSignature().forEach(property -> {
 			if (!property.getInverseProperty().isOWLObjectProperty()) {
-
 				reasoner.getSubObjectProperties(property, true).entities().forEach(subProp -> {
 					if (!subProp.getInverseProperty().isOWLObjectProperty()) {
 						OWLObjectProperty subPropAsProp = subProp.asOWLObjectProperty();
 						OWLObjectProperty propAsProp = property.asOWLObjectProperty();
 						propertyToParent.put(subPropAsProp, propAsProp);
-						propertyToParentString.put(OntologyDescriptor.getCleanName(subPropAsProp.toString()), 
-								OntologyDescriptor.getCleanName(propAsProp.toString()));
+						propertyToParentString.put(OntologyDescriptor.getCleanNameOWLObj(subPropAsProp),
+								OntologyDescriptor.getCleanNameOWLObj(propAsProp));
 					}
 				});
 
 			}
-		}
+		});
 
-		List<OWLObjectPropertyExpression> rolesToSave = new ArrayList<>();
+		while (somethingChanged) {
+			somethingChanged = false;
+			List<OWLObjectPropertyExpression> properties = reasoner
+					.getSubObjectProperties(df.getOWLTopObjectProperty(), true).entities().collect(Collectors.toList());
 
-		if (properties.size() != 2) {
-			rolesToSave.clear();
-			OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
-			properties.stream().forEach(e -> {
-				if (!e.isOWLBottomObjectProperty()) {
-					somethingChanged = true;
-					if (!e.getInverseProperty().isOWLObjectProperty()) {
-						e.asOWLObjectProperty().accept(remover);
-						rolesToSave.add(e);
+
+
+			List<OWLObjectPropertyExpression> rolesToSave = new ArrayList<>();
+
+			if (properties.size() != 2) {
+				rolesToSave.clear();
+				properties.stream().forEach(e -> {
+					if (!e.isOWLBottomObjectProperty()) {
+						somethingChanged = true;
+						if (!e.getInverseProperty().isOWLObjectProperty()) {
+							e.asOWLObjectProperty().accept(remover);
+							rolesToSave.add(e);
+						}
 					}
-				}
-			});
-			manager.applyChanges(remover.getChanges());
-			remover.reset(); // TODO: Remove if not needed
+				});
+				manager.applyChanges(remover.getChanges());
+				remover.reset(); // TODO: Remove if not needed
 
-			depthToProperties.put(depth,
-					rolesToSave.stream().map((x) -> x.asOWLObjectProperty()).collect(Collectors.toList()));
-			if (somethingChanged) {
-				somethingChanged = false;
-				initDepthToRoles(manager, ont, depth + 1);
+				depthToProperties.put(depth,
+						rolesToSave.stream().map((x) -> x.asOWLObjectProperty()).collect(Collectors.toList()));
+				depth++;
 			}
 		}
 	}
@@ -150,27 +222,27 @@ public class OntologyHierarchy {
 	public int getHighestClassDepth() {
 		return depthToClasses.size() - 1;
 	}
-	
+
 	public OWLClass getOWLClassParent(OWLClass cls) {
 		return classToParent.get(cls);
 	}
-	
+
 	public OWLObjectProperty getOWLPropertyParent(OWLObjectProperty cls) {
 		return propertyToParent.get(cls);
 	}
-	
-	public static Map<String,Set<String>> collectStringMapByValue(Map<String,String> aToB) {
-		Map<String,Set<String>> bToAList = new HashMap<>();
-		
-		for(Entry<String, String> entry : aToB.entrySet()) {
+
+	public static Map<String, Set<String>> collectStringMapByValue(Map<String, String> aToB) {
+		Map<String, Set<String>> bToAList = new HashMap<>();
+
+		for (Entry<String, String> entry : aToB.entrySet()) {
 			// Add node to corresponding Group
 			String b = entry.getValue();
-			if (!bToAList.containsKey(b)){
+			if (!bToAList.containsKey(b)) {
 				bToAList.put(b, new HashSet<>());
 			}
 			bToAList.get(b).add(entry.getKey());
 		}
-		
+
 		return bToAList;
 	}
 
