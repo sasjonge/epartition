@@ -42,6 +42,7 @@ public class Partitioner {
 			if (Settings.USE_RDF_LABEL) {
 				OntologyDescriptor.initRDFSLabel(loadedOnt);
 			}
+			
 			OWLOntology oldOntology = manager2.copyOntology(loadedOnt,OntologyCopy.DEEP);
 
 			long loadEndTime = System.nanoTime();
@@ -86,7 +87,7 @@ public class Partitioner {
 
 			GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH);
 
-			// GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
+			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime)/1000000 + "ms");
 		} catch (OWLOntologyCreationException e) {

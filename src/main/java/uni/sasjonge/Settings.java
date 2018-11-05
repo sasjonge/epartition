@@ -7,16 +7,16 @@ public class Settings {
 	
 	// The input ontology
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
-	static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
+	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/pto.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/test_output.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/partitioner_test.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/pepper_dialog/ros_dep/src/knowrob/knowrob_household/owl/kitchen_items.owl";
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/koala.owl";
 	// static final String INPUT_ONTOLOGY = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
 	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/ncit.national-cancer-institute-thesaurus.47.owl.xml";
-	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
+	static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
 
-	public static final int LAYERS_TO_REMOVE = 3;
+	public static final int LAYERS_TO_REMOVE = 1;
 
 	public static final int NUM_OF_INDIVIDUAL_LABELS = 4;
 	
@@ -39,6 +39,10 @@ public class Settings {
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 4;
 
-	public static final boolean USE_RDF_LABEL = false;
+	public static final boolean USE_RDF_LABEL = true;
+	
+	public static final String PROPERTY_0_DESIGNATOR = "[0]";
+	public static final String PROPERTY_1_DESIGNATOR = "[1]";
+	
 	
 }

@@ -90,6 +90,7 @@ public class GraphExporter {
 
 		System.out.println("STEEEEEP 1");
 		// Classes and individuals of the given ontology
+		long startStep1Time = System.nanoTime();
 		Set<String> classes = getClassesForOntology(ontology);
 
 		System.out.println("STEEEEEP 12");
@@ -126,6 +127,11 @@ public class GraphExporter {
 			vertexToAxiomsCount = getAxiomsToVertexCount(ci.connectedSets(), vertexToAxiom);
 		}
 
+		long stopStep1Time = System.nanoTime();
+		System.out.println("Graphbuilding: Step 1 took "
+				+ (stopStep1Time - startStep1Time) / 1000000 + "ms");
+
+
 		System.out.println("STEEEEEP 2");
 		long startClassIndivTime = System.nanoTime();
 		// Map vertexes to classes
@@ -154,9 +160,7 @@ public class GraphExporter {
 				vertexToIndividuals.put(cc.toString() + "", individualsForThisCC);
 			}
 		}
-		long endClassIndivTime = System.nanoTime();
-		System.out.println("Graphbuilding: Mapping vertexes to indiv/classes took "
-				+ (endClassIndivTime - startClassIndivTime) / 1000000 + "ms");
+
 
 		// Add vertexes for all connected components
 		for (Set<String> cc : ci.connectedSets()) {
@@ -171,66 +175,88 @@ public class GraphExporter {
 			}
 		}
 		;
+		
+		long endClassIndivTime = System.nanoTime();
+		System.out.println("Graphbuilding: Step 2 took "
+				+ (endClassIndivTime - startClassIndivTime) / 1000000 + "ms");
 
 		System.out.println("STEEEEEP 3");
 		// Create a map from subconcepts to the cc that contains it
-		Map<String, Set<String>> subToCC = new HashMap<>();
+		Map<String, Set<String>> role0ToCC = new HashMap<>();
+		Map<String, Set<String>> role1ToCC = new HashMap<>();
 		ccWithAxioms.stream().forEach(cc -> {
 			cc.stream().forEach(subcon -> {
-				subToCC.put(subcon, cc);
-			});
-		});
-
-		System.out.println("STEEEEEP 4");
-		long startPropTime = System.nanoTime();
-		// Go through each cc and find corresponding property nodes (same prefix, ending
-		// with 0 or 1)
-		// remember the name of properties for the edges
-		Map<DefaultEdge, Set<String>> nameForEdge = new HashMap<>();
-		Map<String, Set<String>> vertexToProperties = new HashMap<>();
-		ccWithAxioms.stream().forEach(cc -> {
-			cc.stream().forEach(subcon -> {
-				if (subcon.endsWith("0")) {
-					Set<String> correspondingCC = subToCC.get(subcon.substring(0, subcon.length() - 1) + "1");
-					if (correspondingCC != null
-							&& !ccToVertexName.get(cc).equals(ccToVertexName.get(correspondingCC))) {
-
-						DefaultEdge edge = null;
-						Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(cc),
-								ccToVertexName.get(correspondingCC));
-						if (edgeList.isEmpty()) {
-							// If there are no edges of this type, add one
-							edge = ccGraph.addEdge(ccToVertexName.get(cc), ccToVertexName.get(correspondingCC));
-
-						} else if (edgeList.size() == 1) {
-							// If the edgelist is not empty it should only contain one element.
-							edge = edgeList.iterator().next();
-						}
-
-						// Add the hashset if it doesn't exist already
-						if (nameForEdge.get(edge) == null) {
-							nameForEdge.put(edge, new HashSet<String>());
-						}
-
-						System.out.println("!!!!!!!! Adding" + subcon.toString());
-
-						// Then add the name of the edge
-						// System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
-						nameForEdge.get(edge)
-								.add(OntologyDescriptor.getCleanName(subcon.substring(0, subcon.length() - 1)));
-
-					} else {
-						String ccName = ccToVertexName.get(cc);
-						if (vertexToProperties.get(ccName) == null) {
-							vertexToProperties.put(ccName, new HashSet<>());
-						}
-						vertexToProperties.get(ccName)
-								.add(OntologyDescriptor.getCleanName(subcon.substring(0, subcon.length() - 1)));
-					}
+				if (subcon.endsWith(Settings.PROPERTY_0_DESIGNATOR)) {
+					role0ToCC.put(subcon, cc);
+				} else if (subcon.endsWith(Settings.PROPERTY_1_DESIGNATOR)) {
+					role1ToCC.put(subcon, cc);
 				}
 			});
 		});
+		
+		//find corresponding property nodes (same prefix, ending
+				// with 0 or 1)
+				// remember the name of properties for the edges
+		System.out.println("STEEEEEP 4");
+		long startPropTime = System.nanoTime();	
+		
+		Map<DefaultEdge, Set<String>> nameForEdge = new HashMap<>();
+		Map<String, Set<String>> vertexToProperties = new HashMap<>();
+		
+		System.out.println("!!!! role0ToCC is " + role0ToCC.size());
+		for (Entry<String, Set<String>> roleToCC : role0ToCC.entrySet()) {
+			String role0 = roleToCC.getKey();
+			Set<String> ccOfRole1 = role1ToCC.get(role0.substring(0, role0.length() - Settings.PROPERTY_0_DESIGNATOR.length()) + Settings.PROPERTY_1_DESIGNATOR);
+			
+			// If there is a "partner-role"
+			if (ccOfRole1 != null && !ccOfRole1.equals(roleToCC.getValue())) {
+				
+				// if the partner-role is in another cc, add the name to the
+				// edge between the corresponding cc's
+				
+				DefaultEdge edge = null;
+				long startGetEdge = System.currentTimeMillis();
+				Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(roleToCC.getValue()),
+						ccToVertexName.get(ccOfRole1));
+				long stopGetEdge = System.currentTimeMillis();
+				System.out.println("???????????????????? Getting Edge took here " + (stopGetEdge - startGetEdge)/1000000);
+				if (edgeList.isEmpty()) {
+					long startAddEdge = System.currentTimeMillis();
+					// If there are no edges of this type, add one
+					edge = ccGraph.addEdge(ccToVertexName.get(roleToCC.getValue()), ccToVertexName.get(ccOfRole1));
+					long stopAddEdge = System.currentTimeMillis();
+					System.out.println("???????????????????? Adding Edge took here " + (stopAddEdge - startAddEdge)/1000000);
+				} else if (edgeList.size() == 1) {
+					// If the edgelist is not empty it should only contain one element.
+					edge = edgeList.iterator().next();
+				}
 
+				// Add the hashset if it doesn't exist already
+				if (nameForEdge.get(edge) == null) {
+					nameForEdge.put(edge, new HashSet<String>());
+				}
+
+				System.out.println("!!!!!!!! Adding" + role0.toString());
+
+				// Then add the name of the edge
+				// System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
+				nameForEdge.get(edge)
+						.add(OntologyDescriptor.getCleanName(role0.substring(0, role0.length() - Settings.PROPERTY_1_DESIGNATOR.length())));
+
+				
+			} else {
+				// if there is no "partner" role role0 is a dataproperty
+				// if role0 and role1 have the same cc, they are in the same partition
+				String ccName = ccToVertexName.get(roleToCC.getValue());
+				if (vertexToProperties.get(ccName) == null) {
+					vertexToProperties.put(ccName, new HashSet<>());
+				}
+				vertexToProperties.get(ccName)
+						.add(OntologyDescriptor.getCleanName(role0.substring(0, role0.length() - Settings.PROPERTY_0_DESIGNATOR.length())));
+
+			}
+		}
+		
 		long endPropTime = System.nanoTime();
 		System.out.println(
 				"Graphbuilding: Mapping vertexes to properties took " + (endPropTime - startPropTime) / 1000000 + "ms");

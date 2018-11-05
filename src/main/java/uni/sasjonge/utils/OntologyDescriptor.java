@@ -455,8 +455,8 @@ public class OntologyDescriptor {
 		// Vertex: ObjectProperties
 		ontology.objectPropertiesInSignature().forEach(objProp -> {
 			if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
-				toReturn.put(objProp.toString() + "0", manchester.render(objProp) + "0");
-				toReturn.put(objProp.toString() + "1", manchester.render(objProp) + "1");
+				toReturn.put(objProp.toString() + Settings.PROPERTY_0_DESIGNATOR, manchester.render(objProp) + Settings.PROPERTY_0_DESIGNATOR);
+				toReturn.put(objProp.toString() + Settings.PROPERTY_1_DESIGNATOR, manchester.render(objProp) + Settings.PROPERTY_1_DESIGNATOR);
 			}
 		});
 

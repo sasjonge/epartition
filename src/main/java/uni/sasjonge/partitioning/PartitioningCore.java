@@ -80,6 +80,7 @@ import com.fasterxml.jackson.databind.deser.impl.ExternalTypeHandler.Builder;
 
 import uk.ac.manchester.cs.owl.owlapi.OWLClassAssertionAxiomImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNaryIndividualAxiomImpl;
+import uni.sasjonge.Settings;
 import uni.sasjonge.utils.OntologyDescriptor;
 
 /**
@@ -116,15 +117,15 @@ public class PartitioningCore {
 		// Vertex: ObjectProperties
 		ontology.objectPropertiesInSignature().forEach(objProp -> {
 			if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
-				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + "0");
-				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + "1");
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_0_DESIGNATOR);
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_1_DESIGNATOR);
 			}
 		});
 
 		// Vertex: DataProperties
 		ontology.dataPropertiesInSignature().forEach(dataProp -> {
 			if (!dataProp.isOWLTopDataProperty() && !dataProp.isTopEntity()) {
-				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(dataProp)+ "0");
+				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(dataProp)+ Settings.PROPERTY_0_DESIGNATOR);
 			}
 		});
 
@@ -251,12 +252,12 @@ public class PartitioningCore {
 		case DATA_MIN_CARDINALITY:
 			OWLQuantifiedDataRestriction dataRestriction = (OWLQuantifiedDataRestriction) expr;
 			OWLPropertyExpression dProperty = dataRestriction.getProperty();
-			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dProperty) + "0");
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dProperty) + Settings.PROPERTY_0_DESIGNATOR);
 			break;
 
 		case DATA_HAS_VALUE:
 			OWLDataHasValue dHasVal = (OWLDataHasValue) expr;
-			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dHasVal.getProperty()) + "0");
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dHasVal.getProperty()) + Settings.PROPERTY_0_DESIGNATOR);
 			break;
 
 		default:
@@ -400,10 +401,10 @@ public class PartitioningCore {
 		// ------------------- Data Property Axioms --------------------
 		case "SubDataPropertyOf":
 			OWLSubDataPropertyOfAxiom subDataPropAx = (OWLSubDataPropertyOfAxiom) ax;
-			vertex = OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty()) + "0";
+			vertex = OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty()) + Settings.PROPERTY_0_DESIGNATOR;
 
 			if (!subDataPropAx.getSuperProperty().isOWLTopDataProperty()) {
-				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSuperProperty()) + "0");
+				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSuperProperty()) + Settings.PROPERTY_0_DESIGNATOR);
 			}
 			break;
 
@@ -423,7 +424,7 @@ public class PartitioningCore {
 
 		case "DataPropertyDomain":
 			OWLDataPropertyDomainAxiom dataPropDomAx = (OWLDataPropertyDomainAxiom) ax;
-			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getProperty()) + "0";
+			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getProperty()) + Settings.PROPERTY_0_DESIGNATOR;
 			if (!dataPropDomAx.getDomain().isOWLThing()) {
 				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getDomain()));
 			}
@@ -431,7 +432,7 @@ public class PartitioningCore {
 
 		case "FunctionalDataProperty":
 			OWLFunctionalDataPropertyAxiom funcDataPropAx = (OWLFunctionalDataPropertyAxiom) ax;
-			vertex = OntologyDescriptor.getCleanNameOWLObj(funcDataPropAx.getProperty()) + "0";
+			vertex = OntologyDescriptor.getCleanNameOWLObj(funcDataPropAx.getProperty()) + Settings.PROPERTY_0_DESIGNATOR;
 			break;
 
 		// ------------------- Assertions ---------------------
@@ -502,8 +503,9 @@ public class PartitioningCore {
 				throw new IllegalArgumentException("Only 0 or 1 as parameter allowed");
 			}
 
+			String designator = i == 0 ? Settings.PROPERTY_0_DESIGNATOR : Settings.PROPERTY_1_DESIGNATOR;
 			if (property instanceof OWLObjectProperty) {
-				return OntologyDescriptor.getCleanNameOWLObj(property) + i;
+				return OntologyDescriptor.getCleanNameOWLObj(property) + designator;
 			}
 			int j = i == 1 ? 0 : 1;
 			if (!propertyToName.containsKey(property)) {

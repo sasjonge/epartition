@@ -1,7 +1,9 @@
 package uni.sasjonge.Reducer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.semanticweb.owlapi.model.OWLClass;
@@ -16,19 +18,35 @@ import org.semanticweb.owlapi.util.OWLEntityRemover;
 public class OntologyLevelReducer {
 
 	public static OWLOntology removeHighestLevelConc(OWLOntologyManager manager, OWLOntology ontology, int i) {
-		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
-		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
-		OWLDataFactory df = manager.getOWLDataFactory();
-
 		if (i > 0) {
 
-			// Returns all objects on the level < i
-			List<OWLClass> toRemove = reasoner.getSubClasses(df.getOWLThing(), true).entities()
-					.collect(Collectors.toList());
-			;
+			OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
+			OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
+			OWLDataFactory df = manager.getOWLDataFactory();
 
-			// Remove them from the ontology
-			// ontology.remove(toRemove);
+			Set<OWLClass> toRemove = new HashSet<>();
+			
+			Set<OWLClass> currentClassLevel = reasoner.getSubClasses(df.getOWLThing(), true).entities()
+					.collect(Collectors.toSet());
+			while (i > 0) {
+
+				toRemove.addAll(currentClassLevel);
+				Set<OWLClass> newCurrentClassLevel = new HashSet<>();
+				
+				for (OWLClass cls : currentClassLevel) {
+					newCurrentClassLevel.addAll(reasoner.getSubClasses(cls, true).entities()
+							.collect(Collectors.toList()));
+				}
+
+				// Remove them from the ontology
+				// ontology.remove(toRemove);
+				
+				if (!newCurrentClassLevel.isEmpty()) {
+					i--;
+					currentClassLevel = newCurrentClassLevel;
+				}
+			}
+			
 			OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ontology));
 			toRemove.stream().forEach(e -> {
 				if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
@@ -38,7 +56,6 @@ public class OntologyLevelReducer {
 			});
 			manager.applyChanges(remover.getChanges());
 			remover.reset(); // TODO: Remove if not needed
-			return removeHighestLevelConc(manager, ontology, i - 1);
 		}
 		return ontology;
 	}
