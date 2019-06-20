@@ -113,6 +113,7 @@ public class PartitioningCore {
 		ArrayList<OWLOntology> toReturn = new ArrayList<>();
 
 		long addVertexStartTime = System.nanoTime();
+		
 		// Add the Vertexes to our defined algorithm
 		// Vertex: ObjectProperties
 		ontology.objectPropertiesInSignature().forEach(objProp -> {
@@ -146,8 +147,10 @@ public class PartitioningCore {
 		System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000 + "ms");
 
 		long addSubEdgeStartTime = System.nanoTime();
+		
 		// Add the edges according to our defined algorithm
-		// Edge: All sub concepts
+		// Edge: All sub concepts (corresponding to line 3 of the algorithm in the paper)
+		// in the paper
 		ontology.logicalAxioms().forEach(a -> {
 			a.nestedClassExpressions().forEach(nested -> {
 				if (!nested.isOWLThing()) {
@@ -160,6 +163,7 @@ public class PartitioningCore {
 				.println("Adding subconcept edges took " + (addSubEdgeEndTime - addSubEdgeStartTime) / 1000000 + "ms");
 
 		// Edge: All axioms
+		// Edge: All sub concepts (corresponding to line 4 of the algorithm in the paper)
 		long addAxiomEdgeStartTime = System.nanoTime();
 		ontology.logicalAxioms().forEach(this::addAxiomEdges);
 		long addAxiomEdgeEndTime = System.nanoTime();
@@ -205,7 +209,9 @@ public class PartitioningCore {
 		case OBJECT_INTERSECTION_OF:
 		case OBJECT_UNION_OF:
 			((OWLNaryBooleanClassExpression) expr).getOperandsAsList().stream().forEach(sub -> {
-				g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(sub));
+				if (!expr.isOWLThing() && !sub.isOWLThing()) {
+					g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(sub));
+				}
 			});
 			break;
 

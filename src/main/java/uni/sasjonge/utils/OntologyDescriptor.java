@@ -127,8 +127,6 @@ public class OntologyDescriptor {
 			});
 		});
 		
-		System.out.println("!!!!!!!!!! LAbels: " + owlObjectToString.entrySet().size());
-
 	}
 
 	public static String getCleanName(String owlName) {
@@ -580,13 +578,7 @@ public class OntologyDescriptor {
 			for (String subNode : entry.getValue()) {
 
 				if (!cc.contains(subNode) && !cc.contains("[" + subNode + "]")) {
-//					if(cc.contains("SpecificHeatCapacity") && entry.getKey().contains("Quantity")) {
-//						System.out.println("-----------------------");
-//						System.out.println(entry.getKey());
-//						System.out.println(subNode);
-//						System.out.println(cc);
-//						System.out.println("------------------------");
-//					}
+
 					containsAll = false;
 					break;
 				}

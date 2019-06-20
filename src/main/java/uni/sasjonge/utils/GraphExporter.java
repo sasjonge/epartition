@@ -83,21 +83,19 @@ public class GraphExporter {
 	 * 
 	 * @param g          The graph to export
 	 * @param outputPath Parth to output to
+	 * @return 
 	 * @throws ExportException
 	 */
-	public static void exportCCStructureGraph(Graph<String, DefaultEdge> g, OWLOntology ontology,
+	public static String exportCCStructureGraph(Graph<String, DefaultEdge> g, OWLOntology ontology,
 			Map<String, Set<OWLAxiom>> vertexToAxiom, String outputPath) throws ExportException {
+		
+		StringBuilder builder = new StringBuilder();
 
-		System.out.println("STEEEEEP 1");
 		// Classes and individuals of the given ontology
-		long startStep1Time = System.nanoTime();
 		Set<String> classes = getClassesForOntology(ontology);
-
-		System.out.println("STEEEEEP 12");
 
 		Set<String> individuals = getIndividualsForOntology(ontology);
 
-		System.out.println("STEEEEEP 13");
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
 
@@ -115,7 +113,6 @@ public class GraphExporter {
 
 		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
 
-		System.out.println("STEEEEEP 14");
 		Map<String, Set<OWLAxiom>> vertexToAxioms = null;
 		if (Settings.SHOW_AXIOMS) {
 			vertexToAxioms = getAxiomsToVertex(ci.connectedSets(), vertexToAxiom);
@@ -126,14 +123,9 @@ public class GraphExporter {
 		} else {
 			vertexToAxiomsCount = getAxiomsToVertexCount(ci.connectedSets(), vertexToAxiom);
 		}
+		
+		// Save how many axioms there are per vertex
 
-		long stopStep1Time = System.nanoTime();
-		System.out.println("Graphbuilding: Step 1 took "
-				+ (stopStep1Time - startStep1Time) / 1000000 + "ms");
-
-
-		System.out.println("STEEEEEP 2");
-		long startClassIndivTime = System.nanoTime();
 		// Map vertexes to classes
 		// Map vertexes to individuals
 		for (Set<String> cc : ci.connectedSets()) {
@@ -148,9 +140,6 @@ public class GraphExporter {
 
 			if (classesForThisCC.size() > 0) {
 				vertexToClasses.put(cc.toString() + "", classesForThisCC);
-				if (classesForThisCC.size() == 29) {
-					System.out.println(classesForThisCC);
-				}
 			}
 
 			// individuals
@@ -161,13 +150,14 @@ public class GraphExporter {
 			}
 		}
 
-
+		builder.append("[");
 		// Add vertexes for all connected components
 		for (Set<String> cc : ci.connectedSets()) {
 			// System.out
 			// .println("Number of axioms for " + cc.toString() + " is " +
 			// vertexToAxioms.get(cc.toString() + ""));
 			if (vertexToAxiomsCount.get(cc.toString() + "") != null) {
+				builder.append(vertexToAxiomsCount.get(cc.toString() + "").toString() + ", ");
 				ccToVertexName.put(cc, cc.toString() + "");
 				ccGraph.addVertex(cc.toString() + "");
 				ccWithAxioms.add(cc);
@@ -175,12 +165,17 @@ public class GraphExporter {
 			}
 		}
 		;
+		builder.append("], ");
 		
-		long endClassIndivTime = System.nanoTime();
-		System.out.println("Graphbuilding: Step 2 took "
-				+ (endClassIndivTime - startClassIndivTime) / 1000000 + "ms");
+		// Create a map of map as a matrix for connectedness
+		Map<String, Map<String, Integer>> matrix = new HashMap<>();
+		for (Set<String> cc : ci.connectedSets()) {
+			matrix.put(cc.toString() + "", new HashMap<>());
+			for (Set<String> cc2 : ci.connectedSets()) {
+				matrix.get(cc.toString() + "").put(cc2.toString() + "", new Integer(0));
+			}
+		}
 
-		System.out.println("STEEEEEP 3");
 		// Create a map from subconcepts to the cc that contains it
 		Map<String, Set<String>> role0ToCC = new HashMap<>();
 		Map<String, Set<String>> role1ToCC = new HashMap<>();
@@ -197,13 +192,10 @@ public class GraphExporter {
 		//find corresponding property nodes (same prefix, ending
 				// with 0 or 1)
 				// remember the name of properties for the edges
-		System.out.println("STEEEEEP 4");
-		long startPropTime = System.nanoTime();	
 		
 		Map<DefaultEdge, Set<String>> nameForEdge = new HashMap<>();
 		Map<String, Set<String>> vertexToProperties = new HashMap<>();
 		
-		System.out.println("!!!! role0ToCC is " + role0ToCC.size());
 		for (Entry<String, Set<String>> roleToCC : role0ToCC.entrySet()) {
 			String role0 = roleToCC.getKey();
 			Set<String> ccOfRole1 = role1ToCC.get(role0.substring(0, role0.length() - Settings.PROPERTY_0_DESIGNATOR.length()) + Settings.PROPERTY_1_DESIGNATOR);
@@ -215,17 +207,12 @@ public class GraphExporter {
 				// edge between the corresponding cc's
 				
 				DefaultEdge edge = null;
-				long startGetEdge = System.currentTimeMillis();
 				Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(roleToCC.getValue()),
 						ccToVertexName.get(ccOfRole1));
-				long stopGetEdge = System.currentTimeMillis();
-				System.out.println("???????????????????? Getting Edge took here " + (stopGetEdge - startGetEdge)/1000000);
 				if (edgeList.isEmpty()) {
-					long startAddEdge = System.currentTimeMillis();
 					// If there are no edges of this type, add one
 					edge = ccGraph.addEdge(ccToVertexName.get(roleToCC.getValue()), ccToVertexName.get(ccOfRole1));
-					long stopAddEdge = System.currentTimeMillis();
-					System.out.println("???????????????????? Adding Edge took here " + (stopAddEdge - startAddEdge)/1000000);
+					matrix.get(roleToCC.getValue() + "").put(ccOfRole1.toString() + "",new Integer(1));
 				} else if (edgeList.size() == 1) {
 					// If the edgelist is not empty it should only contain one element.
 					edge = edgeList.iterator().next();
@@ -235,8 +222,6 @@ public class GraphExporter {
 				if (nameForEdge.get(edge) == null) {
 					nameForEdge.put(edge, new HashSet<String>());
 				}
-
-				System.out.println("!!!!!!!! Adding" + role0.toString());
 
 				// Then add the name of the edge
 				// System.out.println(getCleanName(subcon.substring(0, subcon.length() - 1)));
@@ -257,15 +242,23 @@ public class GraphExporter {
 			}
 		}
 		
-		long endPropTime = System.nanoTime();
-		System.out.println(
-				"Graphbuilding: Mapping vertexes to properties took " + (endPropTime - startPropTime) / 1000000 + "ms");
+		// Save matrix
+		builder.append("[");
+		
+		for (Entry<String, Map<String, Integer>> row : matrix.entrySet()) {
+			builder.append("[");
+			for (Entry<String, Integer> e : row.getValue().entrySet()) {
+				builder.append(e.getValue() + ", ");
+			}
+			builder.append("],");
 
+		}
+		builder.append("]");
+		
 		/////////////////////////////////////////////////////////////////////////
 		// Export the Graph
 		GraphMLExporter<String, DefaultEdge> exporter = new GraphMLExporter<>();
 
-		System.out.println("STEEEEEP 5");
 		// Register additional name attribute for vertices
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
@@ -277,7 +270,6 @@ public class GraphExporter {
 			}
 		});
 
-		System.out.println("STEEEEEP 6");
 		// Register additional name attribute for edges
 		exporter.setEdgeLabelProvider(new ComponentNameProvider<DefaultEdge>() {
 
@@ -292,24 +284,20 @@ public class GraphExporter {
 		// Initizalize Filewriter and export the corresponding graph
 		FileWriter fw;
 		try {
-			long startWriteTime = System.nanoTime();
 			fw = new FileWriter(outputPath);
 			exporter.exportGraph(ccGraph, fw);
 			fw.flush();
 			fw.close();
-			long endWriteTime = System.nanoTime();
-			System.out
-					.println("Graphbuilding: Writing output took " + (endWriteTime - startWriteTime) / 1000000 + "ms");
-
+			return builder.toString();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return builder.toString();
 	}
 
 	private static Map<String, Set<OWLAxiom>> getAxiomsToVertex(List<Set<String>> connectedSets,
 			Map<String, Set<OWLAxiom>> vertexToAxiom) {
 
-		long startTimes = System.nanoTime();
 		Map<String, Set<OWLAxiom>> vertexToAxioms = new HashMap<>();
 		for (Set<String> cc : connectedSets) {
 			for (String vert : cc) {
@@ -323,16 +311,11 @@ public class GraphExporter {
 			}
 		}
 
-		long endTimes = System.nanoTime();
-
-		System.out.println("This call to getAxiomsToVertex took " + (endTimes - startTimes) / 1000000 + "ms");
-
 		return vertexToAxioms;
 	}
 
 	private static Map<String, Integer> getAxiomsToVertexCount(List<Set<String>> connectedSets,
 			Map<String, Set<OWLAxiom>> vertexToAxiom) {
-		long startTimes = System.nanoTime();
 		Map<String, Integer> vertexToAxioms = new HashMap<>();
 		for (Set<String> cc : connectedSets) {
 			int count = 0;
@@ -343,10 +326,6 @@ public class GraphExporter {
 			}
 			vertexToAxioms.put(cc.toString() + "",count);
 		}
-
-		long endTimes = System.nanoTime();
-
-		System.out.println("This call to getAxiomsToVertex took " + (endTimes - startTimes) / 1000000 + "ms");
 
 		return vertexToAxioms;
 	}
@@ -369,10 +348,8 @@ public class GraphExporter {
 	public static void init(OWLOntology ontology) {
 
 		try {
-			System.out.println("STEEEEEP 0x1");
 			ontHierachy = new OntologyHierarchy(ontology);
 
-			System.out.println("STEEEEEP 0x2");
 			ontDescriptor = new OntologyDescriptor(ontHierachy, ontology);
 			// System.out.println(depthToClasses);
 		} catch (OWLOntologyCreationException e) {

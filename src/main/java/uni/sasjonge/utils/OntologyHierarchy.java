@@ -52,18 +52,12 @@ public class OntologyHierarchy {
 		reasoner = reasonerFactory.createNonBufferingReasoner(copydOnt);
 		df = manager.getOWLDataFactory();
 
-		System.out.println("STEEEEEP 1x1");
-
 		initDepthToClass(manager, copydOnt, 0);
-
-		System.out.println("STEEEEEP 1x2");
 
 		initDepthToRoles(manager, copydOnt, 0);
 
-		System.out.println("STEEEEEP 1x3");
 		parentToClassesString = collectStringMapByValue(classToParentString);
 
-		System.out.println("STEEEEEP 1x4");
 		parentToPropertiesString = collectStringMapByValue(propertyToParentString);
 
 	}
@@ -71,9 +65,6 @@ public class OntologyHierarchy {
 	private void initDepthToClass(OWLOntologyManager manager, OWLOntology ont, int depth) {
 
 		boolean areThereLower = true;
-
-		System.out.println("STEEEEEP 1x1x1");
-		long startClassDepthTime = System.nanoTime();
 
 		List<OWLClass> classes = reasoner.getSubClasses(df.getOWLThing(), true).entities().collect(Collectors.toList());
 
@@ -100,67 +91,14 @@ public class OntologyHierarchy {
 
 			depth++;
 
-			if (newClasses.size() < 3) {
-				System.out.println(newClasses.toString());
+			if (newClasses.size() < 1) {
 				areThereLower = false;
 			}
 
 		}
-		long endClassDepthTime = System.nanoTime();
-		System.out.println("Graph building took " + (endClassDepthTime - startClassDepthTime) / 1000000 + "ms");
 	}
 
-//	private void initDepthToClassNew(OWLOntologyManager manager, OWLOntology ont, int depth) {
-//		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
-//		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
-//		OWLDataFactory df = manager.getOWLDataFactory();
-//		boolean ontDidChange = true;
-//		
-//		System.out.println("STEEEEEP 1x1x1");
-//		long startClassDepthTime = System.nanoTime();
-//		
-//		Set<OWLClassExpression> topClassesThisLevel = new HashSet<>();
-//		topClassesThisLevel.add(df.getOWLThing());
-//
-//		while (ontDidChange) {
-//
-//			ontDidChange = false;
-//
-//			for (OWLClassExpression expr : topClassesThisLevel)
-//			//List<OWLClass> classes = reasoner.getSubClasses(topClassesThisLevel, true).entities()
-//					.collect(Collectors.toList());
-//
-//			// save parent structure
-//			for (OWLClass cls : classes) {
-//				reasoner.getSubClasses(cls, true).entities().forEach(subCls -> {
-//					classToParent.put(subCls, cls);
-//					classToParentString.put(OntologyDescriptor.getCleanNameOWLObj(subCls),
-//							OntologyDescriptor.getCleanNameOWLObj(cls));
-//				});
-//			}
-//
-//			if (!classes.isEmpty()) {
-//				OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ont));
-//				for (OWLClass e : classes) {
-//					if (!e.isOWLNothing() && !reasoner.getSubClasses(e).isBottomSingleton()) {
-//						ontDidChange = true;
-//						e.accept(remover);
-//					}
-//				}
-//				manager.applyChanges(remover.getChanges());
-//				remover.reset(); // TODO: Remove if not needed
-//
-//				depthToClasses.put(depth, classes);
-//
-//				depth++;
-//			}
-//		}
-//		long endClassDepthTime = System.nanoTime();
-//		System.out.println("Graph building took " + (endClassDepthTime - startClassDepthTime)/1000000 + "ms");
-//	}
-
 	private void initDepthToRoles(OWLOntologyManager manager, OWLOntology ont, int depth) {
-		long startRoleDepthTime = System.nanoTime();
 
 		// save parent role structure
 		ont.objectPropertiesInSignature().forEach(property -> {
@@ -213,9 +151,6 @@ public class OntologyHierarchy {
 				isThereLowerLevel = false;
 			}
 		}
-
-		long endRoleDepthTime = System.nanoTime();
-		System.out.println("Graph building took " + (endRoleDepthTime - startRoleDepthTime) / 1000000 + "ms");
 
 	}
 

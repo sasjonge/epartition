@@ -3,7 +3,7 @@ package uni.sasjonge;
 public class Settings {
 	
 	// The output path for the graph
-	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/test.graphml";
+	static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
 	
 	// The input ontology
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/knowrob_merged.owl";
@@ -14,9 +14,9 @@ public class Settings {
 	// static final String INPUT_ONTOLOGY = "file:/home/sascha/workspace/java_ws/partitioner/res/koala.owl";
 	// static final String INPUT_ONTOLOGY = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
 	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/ncit.national-cancer-institute-thesaurus.47.owl.xml";
-	static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
+	//static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
 
-	public static final int LAYERS_TO_REMOVE = 1;
+	public static final int LAYERS_TO_REMOVE = 0;
 
 	public static final int NUM_OF_INDIVIDUAL_LABELS = 4;
 	
@@ -39,10 +39,15 @@ public class Settings {
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 4;
 
-	public static final boolean USE_RDF_LABEL = true;
+	public static final boolean USE_RDF_LABEL = false;
 	
 	public static final String PROPERTY_0_DESIGNATOR = "[0]";
 	public static final String PROPERTY_1_DESIGNATOR = "[1]";
 	
+	// How to handle universal roles
+	// - do we even want to handle them? if false, the tool refuses universal roles
+	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
+	// - if true, we can set a treshold to which point the program 
+	public static final int UNIVERAL_ROLES_TRESHOLD = 5;
 	
 }

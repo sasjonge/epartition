@@ -1,18 +1,36 @@
 package uni.sasjonge;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.xml.transform.TransformerConfigurationException;
 
 import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLPrimitive;
 import org.semanticweb.owlapi.model.parameters.OntologyCopy;
+import org.semanticweb.owlapi.reasoner.OWLReasoner;
+import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
+import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
+import org.semanticweb.owlapi.util.DLExpressivityChecker;
+import org.semanticweb.owlapi.util.OWLEntityRemover;
 import org.xml.sax.SAXException;
 
 import uni.sasjonge.Reducer.OntologyLevelReducer;
@@ -23,10 +41,19 @@ import uni.sasjonge.utils.OntologyDescriptor;
 
 public class Partitioner {
 	
+	OWLReasonerFactory reasonerFactory;
+	OWLReasoner reasoner;
+	OWLDataFactory df;
+	StringBuilder builder;
 	
-	public static void main(String[] args) {
+	public void loadOntology(String input_ontology) {
+		
+		builder = new StringBuilder();
+
 		long startTime = System.nanoTime();
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+		df = manager.getOWLDataFactory();
+		
 		
 		// Initizalize the partioning algorithm
 		PartitioningCore pc = new PartitioningCore();
@@ -37,19 +64,65 @@ public class Partitioner {
 		try {
 			// Load the input ontology
 			long loadStartTime = System.nanoTime();
-			OWLOntology loadedOnt = manager.loadOntology(IRI.create(Settings.INPUT_ONTOLOGY));
+			OWLOntology loadedOnt = manager.loadOntology(IRI.create("file:"+input_ontology));
+			
+			
 			// if rdfs:labels are used as name, map them
 			if (Settings.USE_RDF_LABEL) {
 				OntologyDescriptor.initRDFSLabel(loadedOnt);
 			}
 			
-			OWLOntology oldOntology = manager2.copyOntology(loadedOnt,OntologyCopy.DEEP);
-
 			long loadEndTime = System.nanoTime();
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime)/1000000 + "ms");
-
+			
+			builder.append(getFileName(input_ontology) + ", ");
+			builder.append((loadEndTime - loadStartTime)/1000000 + ", ");
+			
+			// Check expressivity of the ontology and either stop or handle the cases 
+			long expressStartTime = System.nanoTime();
+			List<OWLAxiom> axiomsContainingUniveralRole 
+				= loadedOnt.referencingAxioms(df.getOWLTopObjectProperty())
+														.collect(Collectors.toList());
+			
+			// If we have universal roles we remove them to a specific treshhold
+			if (axiomsContainingUniveralRole.size() > 0) {
+				if (Settings.HANDLE_UNIVERSAL_ROLES) {
+					
+					System.out.println(getFileName(input_ontology) + " has " + axiomsContainingUniveralRole.size());
+					
+					if (axiomsContainingUniveralRole.size() <= Settings.UNIVERAL_ROLES_TRESHOLD) {
+						// Remove all axioms containing the universal role
+						loadedOnt.remove(axiomsContainingUniveralRole);
+					} else {
+						builder = null;
+						return;
+					}
+				} else {
+					builder = null;
+					return;
+				}
+			} 
+			
+			long expressEndTime = System.nanoTime();
+			System.out.println("Checking expressivity took " + (expressEndTime - expressStartTime)/1000000 + "ms");	
+			
+			// Copying ontology
+			long copyStartTime = System.nanoTime();
+			OWLOntology oldOntology = manager2.copyOntology(loadedOnt,OntologyCopy.DEEP);
+			
+			long copyEndTime = System.nanoTime();
+			System.out.println("Copying the ontology took " + (copyEndTime - copyStartTime)/1000000 + "ms");	
+			
+			// Create a reasoner#
+			long reasonerStartTime = System.nanoTime();
+			reasonerFactory = new StructuralReasonerFactory();
+			reasoner = reasonerFactory.createNonBufferingReasoner(oldOntology);
+			long reasonerEndTime = System.nanoTime();
+			System.out.println("Creating a structural readoner took took " + (reasonerEndTime - reasonerStartTime)/1000000 + "ms");
+			builder.append((reasonerEndTime - reasonerStartTime)/1000000 + ", ");
+	
 			long reduceStartTime = System.nanoTime();
-			OWLOntology ontology = OntologyLevelReducer.removeHighestLevelConc(manager,loadedOnt,Settings.LAYERS_TO_REMOVE);
+			OWLOntology ontology = OntologyLevelReducer.removeHighestLevelConc(manager,loadedOnt, reasoner, df, Settings.LAYERS_TO_REMOVE);
 			//OWLOntology ontology = (new OntologyReducer(manager,loadedOnt)).removeHighestLevelConc(3);
 
 //			UpperLevelRemover ulRemove = new UpperLevelRemover(Settings.UPPER_LEVEL_FILE);
@@ -63,13 +136,14 @@ public class Partitioner {
 			
 			long reduceEndTime = System.nanoTime();
 			System.out.println("Reducing the ontology took " + (reduceEndTime - reduceStartTime)/1000000 + "ms");
+			builder.append((reduceEndTime - reduceStartTime)/1000000 + ",");
 			
 			long startPartTime = System.nanoTime();
 			// Call the partitioning algorithm
-			System.out.println(ontology);
 			List<OWLOntology> partitionedOntologies = pc.partition(ontology);
 			long endPartTime = System.nanoTime();
 			System.out.println("Partitioning took " + (endPartTime - startPartTime)/1000000 + "ms");
+			builder.append((endPartTime - startPartTime)/1000000 + ", ");
 			
 			// Export the onotologys
 			//partitionedOntologies.stream().forEach(t -> {
@@ -85,11 +159,15 @@ public class Partitioner {
 			long startGraphTime = System.nanoTime();
 			GraphExporter.init(oldOntology);
 
-			GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH);
+			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
+			 + ".graphml");
 
 			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime)/1000000 + "ms");
+			
+			builder.append((endGraphTime - startGraphTime)/1000000 + ", ");
+			builder.append(graphStructure);
 		} catch (OWLOntologyCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -106,8 +184,46 @@ public class Partitioner {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		long endTime = System.nanoTime();
-		System.out.println("Overall: " + (endTime - startTime)/1000000 + "ms");
+	}
+	
+	private String getFileName(String input_ontology) {
+		// TODO Auto-generated method stub
+		String pre = input_ontology.substring(input_ontology.lastIndexOf("/"));
+		return pre.substring(0, pre.lastIndexOf('.')).replace(", ]", "]");
+	}
 
+	public String getStatistics( ) {
+		return builder != null ? builder.toString() : null;
+	}
+	
+	public static void main(String[] args) {	
+		try (Stream<Path> paths = Files.walk(Paths.get("/home/sascha/Desktop/onts"))) {
+			
+			File fout = new File("/home/sascha/Desktop/statistics.xml");
+			FileOutputStream fos = new FileOutputStream(fout);
+		 
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+		 
+		    paths
+		        .filter(Files::isRegularFile)
+		        .forEach(e -> {
+		        	Partitioner part = new Partitioner();
+		        	part.loadOntology(e.toAbsolutePath().toString());		        
+		        	try {
+		        		String stats = part.getStatistics();
+		        		if (stats != null) {
+		        			bw.write(stats + "\n");
+		        			bw.flush();
+		        		}
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+		        });
+		    bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 	}
 }
