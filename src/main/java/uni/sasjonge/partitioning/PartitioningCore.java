@@ -310,9 +310,6 @@ public class PartitioningCore {
 		case "DisjointUnion":
 			OWLDisjointUnionAxiom duax = (OWLDisjointUnionAxiom) ax;
 			List<String> vertexList2 = new ArrayList<>();
-			duax.getOWLDisjointClassesAxiom().classExpressions().forEach(cexp -> {
-				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
-			});
 			duax.getOWLEquivalentClassesAxiom().classExpressions().forEach(cexp -> {
 				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			});
