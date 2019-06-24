@@ -1,5 +1,10 @@
 package uni.sasjonge;
 
+/**
+ * Helper class to store settings like pathes, output format, parameters for heuristics, etc.
+ * @author sascha
+ *
+ */
 public class Settings {
 	
 	// The output path for the graph
@@ -16,24 +21,30 @@ public class Settings {
 	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/ncit.national-cancer-institute-thesaurus.47.owl.xml";
 	//static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
 
+	// Number of "layers" to remove in the OntologyLevelReducer
 	public static final int LAYERS_TO_REMOVE = 0;
 
-	public static final int NUM_OF_INDIVIDUAL_LABELS = 4;
-	
-	public static final int CLASS_DEPTH_TO_REMOVE = 3;
-
-	public static final int NUM_OF_CLASS_LABELS_TOPLEVEL = 6;
-	public static final int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
-	
-	public static final int NUM_OF_INDIV_LABELS = 3;
-	
-	public static final int NUM_OF_PROPERTY_LABELS_EDGE = 4;
-	
-	public static final int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 3;
-	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
-
+	// File used in the UpperLevelRemover. Should contain upper level ontologies
 	static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
 
+	// Graph visualization
+	// How many individual labels should be shown
+	public static final int NUM_OF_INDIV_LABELS = 3;
+	// Number of properties on a edge
+	public static final int NUM_OF_PROPERTY_LABELS_EDGE = 4;
+
+	// Number of class labels on a node
+	// Max number of "Groups" to be shown
+	public static final int NUM_OF_CLASS_LABELS_TOPLEVEL = 6;
+	// Max number of classes per group
+	public static final int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
+	
+	// Number of property labels on a node
+	// Max number of "Groups" to be shown
+	public static final int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 3;
+	// Max number of classes per group
+	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
+	
 	// Should axioms be shown?
 	public static final boolean SHOW_AXIOMS = false;
 	// If yes, how many?
@@ -41,6 +52,7 @@ public class Settings {
 
 	public static final boolean USE_RDF_LABEL = false;
 	
+	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>
 	public static final String PROPERTY_0_DESIGNATOR = "[0]";
 	public static final String PROPERTY_1_DESIGNATOR = "[1]";
 	

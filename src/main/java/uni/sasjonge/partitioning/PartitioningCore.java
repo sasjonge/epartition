@@ -86,7 +86,8 @@ import uni.sasjonge.utils.OntologyDescriptor;
 /**
  * 
  * Core partitioning algorithm based on the following paper:
- * 
+ * Jongebloed, Sascha, and Thomas Schneider. "Ontology Partitioning Using E-Connections Revisited." MedRACER+ WOMoCoE@ KR. 2018.
+ * Link to paper: http://www.informatik.uni-bremen.de/tdki/research/papers/2018/JS-DL18.pdf
  * 
  * @author Sascha Jongebloed
  *
@@ -202,6 +203,7 @@ public class PartitioningCore {
 
 		// ObjectComplementOf
 		case OBJECT_COMPLEMENT_OF:
+			// Edge between expr and it's complement
 			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(((OWLObjectComplementOf) expr).getOperand()));
 			break;
 
@@ -210,6 +212,7 @@ public class PartitioningCore {
 		case OBJECT_UNION_OF:
 			((OWLNaryBooleanClassExpression) expr).getOperandsAsList().stream().forEach(sub -> {
 				if (!expr.isOWLThing() && !sub.isOWLThing()) {
+					// Edgen between expr and all Operands
 					g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(sub));
 				}
 			});
@@ -224,8 +227,10 @@ public class PartitioningCore {
 			OWLQuantifiedObjectRestriction restriction = (OWLQuantifiedObjectRestriction) expr;
 			OWLObjectPropertyExpression property = restriction.getProperty();
 			OWLClassExpression con = restriction.getFiller();
+			// Edge between expr and the right property node
 			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(property, 0));
 			if (!((con.isOWLThing() || con.isOWLNothing()))) {
+				// Edge between property and filler
 				g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(con));
 			}
 			break;
@@ -233,6 +238,7 @@ public class PartitioningCore {
 		// ObjectOneOf
 		case OBJECT_ONE_OF:
 			((OWLObjectOneOf) expr).operands().forEach(indiv -> {
+				// Edge between expr and the individual
 				g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(indiv));
 			});
 			break;
@@ -240,12 +246,15 @@ public class PartitioningCore {
 		// Self restriction
 		case OBJECT_HAS_SELF:
 			OWLObjectPropertyExpression propertySelf = ((OWLObjectHasSelf) expr).getProperty();
-			g.addEdge(getPropertyVertex(propertySelf, 0), getPropertyVertex(propertySelf, 1));
+			// Connect expr with r0 and r1 for property r
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr),getPropertyVertex(propertySelf, 0));
+			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(propertySelf, 1));
 			break;
 
 		// ObjectHasValue
 		case OBJECT_HAS_VALUE:
 			OWLObjectHasValue hasVal = (OWLObjectHasValue) expr;
+			// connect expr to r0 and r1 to the value
 			g.addEdge(getPropertyVertex(hasVal.getProperty(), 1), OntologyDescriptor.getCleanNameOWLObj(hasVal.getFiller()));
 			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(hasVal.getProperty(), 0));
 			break;
@@ -258,11 +267,13 @@ public class PartitioningCore {
 		case DATA_MIN_CARDINALITY:
 			OWLQuantifiedDataRestriction dataRestriction = (OWLQuantifiedDataRestriction) expr;
 			OWLPropertyExpression dProperty = dataRestriction.getProperty();
+			// connect expr to the data property
 			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dProperty) + Settings.PROPERTY_0_DESIGNATOR);
 			break;
 
 		case DATA_HAS_VALUE:
 			OWLDataHasValue dHasVal = (OWLDataHasValue) expr;
+			// Connect expr. to data property
 			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), OntologyDescriptor.getCleanNameOWLObj(dHasVal.getProperty()) + Settings.PROPERTY_0_DESIGNATOR);
 			break;
 
@@ -281,6 +292,10 @@ public class PartitioningCore {
 	 */
 	public void addAxiomEdges(OWLAxiom ax) {
 
+		// In contrast to the paper, we label the corresponding nodes instead of the edges. 
+		// This brings only minor changes to the algorithm
+		
+		// Vertex for labelling
 		String vertex = null;
 
 		switch (ax.getAxiomType().toString()) {
@@ -292,6 +307,7 @@ public class PartitioningCore {
 			OWLSubClassOfAxiom subCOf = (OWLSubClassOfAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass());
 			if (!subCOf.getSuperClass().isOWLThing()) {
+				// Add an edge between the sub- and super class
 				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSuperClass()));
 			}
 			break;
@@ -300,25 +316,33 @@ public class PartitioningCore {
 		case "DisjointClasses":
 			OWLNaryClassAxiom naryaxiom = (OWLNaryClassAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(naryaxiom.getOperandsAsList().get(0));
+			
+			// collect all class expressions in this axiom
 			List<String> vertexList = new ArrayList<>();
-			for (OWLClassExpression cexp : naryaxiom.getOperandsAsList()) {
+			naryaxiom.operands().forEach(cexp -> {
 				vertexList.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
-			}
+			});
+			// Add edges between all equivalent classes
 			connect_vertexes_stepwise(vertexList);
 			break;
 
 		case "DisjointUnion":
 			OWLDisjointUnionAxiom duax = (OWLDisjointUnionAxiom) ax;
 			List<String> vertexList2 = new ArrayList<>();
+			// Add the class which is equivalent to the disjoint union
+			vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(duax.getOWLClass()));
+			// Collect all equivalent classes
 			duax.getOWLEquivalentClassesAxiom().classExpressions().forEach(cexp -> {
 				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			});
+			
+			// Connect this classes
 			connect_vertexes_stepwise(vertexList2);
 			vertex = vertexList2.get(0);
 			break;
 
 		// ----------------- Object Property Axioms -------------------
-		case "SubObjectPropertyOf": // Chain suchen
+		case "SubObjectPropertyOf":
 			OWLSubObjectPropertyOfAxiom subObjectPropAx = (OWLSubObjectPropertyOfAxiom) ax;
 			OWLObjectPropertyExpression subProp = subObjectPropAx.getSubProperty();
 			OWLObjectPropertyExpression superProp = subObjectPropAx.getSuperProperty();
@@ -334,14 +358,15 @@ public class PartitioningCore {
 			List<OWLObjectPropertyExpression> propertyChain = propChainAx.getPropertyChain();
 			int chainLength = propertyChain.size();
 			vertex = getPropertyVertex(propertyChain.get(0), 0);
-			// Link first with superproperty
+			// Link first Property0 with Superproperty0
 			String superProp2 = getPropertyVertex(propChainAx.getSuperProperty(), 0);
 			if (!vertex.equals(superProp2)) {
 				g.addEdge(vertex, superProp2);
 			}
-			// Link last with superproperty
+			// Link last Property1 with Superproperty1
 			g.addEdge(getPropertyVertex(propertyChain.get(chainLength - 1), 1),
 					getPropertyVertex(propChainAx.getSuperProperty(), 1));
+			// Link all other properties in the chain, by connecting the R1 to S0 iff propertychain has the form (...,R,S,...)
 			for (int k = 0; k < chainLength - 1; k++) {
 				g.addEdge(getPropertyVertex(propertyChain.get(k), 1), getPropertyVertex(propertyChain.get(k + 1), 0));
 			}
@@ -352,38 +377,50 @@ public class PartitioningCore {
 			OWLNaryPropertyAxiom<OWLObjectPropertyExpression> naryPropAx = (OWLNaryPropertyAxiom<OWLObjectPropertyExpression>) ax;
 			List<String> object_prop_zero = new ArrayList<>();
 			List<String> object_prop_one = new ArrayList<>();
+			
+			// get the R0 and R1 for all object properties R in the axiom
 			naryPropAx.properties().forEach(prop -> {
 				object_prop_zero.add(getPropertyVertex(prop, 0));
 				object_prop_one.add(getPropertyVertex(prop, 1));
 			});
+			
+			// Connect all R0
 			connect_vertexes_stepwise(object_prop_zero);
+			
+			// Connect all R1
 			connect_vertexes_stepwise(object_prop_one);
+			
 			vertex = object_prop_zero.get(0);
 			break;
 
 		case "InverseObjectProperties":
 			OWLInverseObjectPropertiesAxiom iopax = (OWLInverseObjectPropertiesAxiom) ax;
+			// Get the properties R and S with R being an inverse of S
 			OWLObjectPropertyExpression firstProp = iopax.getFirstProperty();
 			OWLObjectPropertyExpression secondProp = iopax.getSecondProperty();
 
 			vertex = getPropertyVertex(firstProp, 0);
+			
+			// connect R0 with S1 and R1 with S0 
 			g.addEdge(vertex, getPropertyVertex(secondProp, 1));
 			g.addEdge(getPropertyVertex(secondProp, 0), getPropertyVertex(firstProp, 1));
-			break;
-
-		case "ObjectPropertyRange":
-			OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
-			vertex = getPropertyVertex(objPropRangeAx.getProperty(), 0);
-			if (!objPropRangeAx.getRange().isOWLThing()) {
-				g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
-			}
 			break;
 
 		case "ObjectPropertyDomain":
 			OWLObjectPropertyDomainAxiom objPropDomAx = (OWLObjectPropertyDomainAxiom) ax;
 			vertex = getPropertyVertex(objPropDomAx.getProperty(), 0);
 			if (!objPropDomAx.getDomain().isOWLThing()) {
+				// Connect R0 to the domain
 				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(objPropDomAx.getDomain()));
+			}
+			break;
+			
+		case "ObjectPropertyRange":
+			OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
+			vertex = getPropertyVertex(objPropRangeAx.getProperty(), 0);
+			if (!objPropRangeAx.getRange().isOWLThing()) {
+				// Connect R1 to the range
+				g.addEdge(getPropertyVertex(objPropRangeAx.getProperty(), 1), OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
 			}
 			break;
 
@@ -391,17 +428,23 @@ public class PartitioningCore {
 		case "AsymmetricObjectProperty":
 		case "InverseFunctionalObjectProperty":
 		case "IrrefexiveObjectProperty":
+		case "TransitiveObjectProperty":
+			// In this case we only need to label a vertex with this axiom
 			vertex = getPropertyVertex(((OWLObjectPropertyCharacteristicAxiom) ax).getProperty(), 0);
 			break;
+			
 		case "ReflexiveObjectProperty":
 		case "SymmetricObjectProperty":
-		case "TransitiveObjectProperty":
 			OWLObjectPropertyCharacteristicAxiom propax = (OWLObjectPropertyCharacteristicAxiom) ax;
 			vertex = getPropertyVertex(propax.getProperty(), 0);
+			// In this cases we need to connect R0 and R1 
 			g.addEdge(vertex, getPropertyVertex(propax.getProperty(), 1));
 			break;
 
 		// ------------------- Data Property Axioms --------------------
+		// For convenience we use p0 as the node for the dataproperty
+		// We don't handle the range for the dataproperty, because it's not needed to partition the ontology
+			
 		case "SubDataPropertyOf":
 			OWLSubDataPropertyOfAxiom subDataPropAx = (OWLSubDataPropertyOfAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty()) + Settings.PROPERTY_0_DESIGNATOR;
@@ -414,14 +457,20 @@ public class PartitioningCore {
 		case "EquivalentDataProperties":
 		case "DisjointDataProperties":
 			OWLNaryPropertyAxiom<OWLDataPropertyExpression> naryDataPropAx = (OWLNaryPropertyAxiom<OWLDataPropertyExpression>) ax;
+			// Collect all properties
 			List<String> naryDataPropAxNames = naryDataPropAx.properties().map(e -> OntologyDescriptor.getCleanNameOWLObj(e))
 					.collect(Collectors.toList());
-			vertex = naryDataPropAxNames.get(0);
+			
+			// Connect all properties
 			connect_vertexes_stepwise(naryDataPropAxNames);
+			
+			vertex = naryDataPropAxNames.get(0);
 			break;
 
 		case "DataPropertyRange":
 			OWLDataPropertyRangeAxiom dataPropRangeAx = (OWLDataPropertyRangeAxiom) ax;
+			// Just save the axiom (we don't handle the "datapartition" in this algorithm, because
+			// it's not necessary for the partitioning)
 			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropRangeAx.getProperty());
 			break;
 
@@ -435,6 +484,8 @@ public class PartitioningCore {
 
 		case "FunctionalDataProperty":
 			OWLFunctionalDataPropertyAxiom funcDataPropAx = (OWLFunctionalDataPropertyAxiom) ax;
+			
+			// Similarly to FunctionalObjectProperty: We only need to add the axiom to a label
 			vertex = OntologyDescriptor.getCleanNameOWLObj(funcDataPropAx.getProperty()) + Settings.PROPERTY_0_DESIGNATOR;
 			break;
 
@@ -443,14 +494,21 @@ public class PartitioningCore {
 		case "SameIndividual":
 		case "DifferentIndividuals":
 			OWLNaryIndividualAxiom sameIndivAx = (OWLNaryIndividualAxiomImpl) ax;
+			
+			// Collect all individuals in this axiom
 			List<String> listOfIndiv = sameIndivAx.individuals().map(e -> OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toList());
-			vertex = listOfIndiv.get(0);
+
+			// Connect them
 			connect_vertexes_stepwise(listOfIndiv);
+			
+			vertex = listOfIndiv.get(0);
 			break;
 
 		case "ClassAssertion":
 			OWLClassAssertionAxiom classAssert = (OWLClassAssertionAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(classAssert.getIndividual());
+			
+			// Simply connect the individual and the Clas
 			if (!classAssert.getClassExpression().isTopEntity()) {
 				g.addEdge(vertex, OntologyDescriptor.getCleanNameOWLObj(classAssert.getClassExpression()));
 			}
@@ -459,11 +517,16 @@ public class PartitioningCore {
 		case "ObjectPropertyAssertion":
 		case "NegativeObjectPropertyAssertion":
 			OWLPropertyAssertionAxiom<OWLObjectPropertyExpression, OWLIndividual> objectPropAss = (OWLPropertyAssertionAxiom<OWLObjectPropertyExpression, OWLIndividual>) ax;
+			
+			// Get the property and the indivdual (the subject)
 			OWLObjectPropertyExpression property = objectPropAss.getProperty();
 			OWLIndividual subject = objectPropAss.getSubject();
+			OWLIndividual object = objectPropAss.getObject();
+			
+			// Connect the Subject to R0 and the object to R1
 			vertex = OntologyDescriptor.getCleanNameOWLObj(subject);
 			g.addEdge(vertex, getPropertyVertex(property, 0));
-			g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(objectPropAss.getObject()));
+			g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(object));
 			break;
 
 		case "DataPropertyAssertion":
@@ -471,17 +534,14 @@ public class PartitioningCore {
 			OWLPropertyAssertionAxiom<OWLDataPropertyExpression, OWLLiteral> dataPropAss = (OWLPropertyAssertionAxiom<OWLDataPropertyExpression, OWLLiteral>) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(dataPropAss.getProperty());
 			break;
-
+			
 		default:
+			// Print a message if the axiomtype is not handled. 
 			if (!(ax instanceof OWLAnnotationAssertionAxiom)) {
 				System.err.println("Missing axiom: " + ax.getAxiomType() + " Form: " + ax);
 			}
 			break;
 		}
-
-		// FunctionalObjectProperty
-		// } else if (ax instanceof OWLFunctionalObjectPropertyAxiom) {
-		// edge = g.addEdge(property, property)
 
 		if (vertex != null) {
 			if(!vertexToAxiom.containsKey(vertex)) {
@@ -501,25 +561,42 @@ public class PartitioningCore {
 	 * @return String of the form <Property>0 or <Property>1
 	 */
 	private String getPropertyVertex(OWLObjectPropertyExpression property, int i) {
+		// Only r1 and r0 are allowed
+		if (i != 0 && i != 1) {
+			throw new IllegalArgumentException("Only 0 or 1 as parameter allowed");
+		}
+		
+		// propertiesToName are saved to improve the recall time. Check if they are already stored:
 		if (!(propertyToName.containsKey(property) && propertyToName.get(property)[i] != null)) {
-			if (i != 0 && i != 1) {
-				throw new IllegalArgumentException("Only 0 or 1 as parameter allowed");
-			}
-
-			String designator = i == 0 ? Settings.PROPERTY_0_DESIGNATOR : Settings.PROPERTY_1_DESIGNATOR;
-			if (property instanceof OWLObjectProperty) {
-				return OntologyDescriptor.getCleanNameOWLObj(property) + designator;
-			}
-			int j = i == 1 ? 0 : 1;
+			
+			// If not, and the properety isn't event stored, store a String array of length 2 (for 0 and 1) with the property as key
 			if (!propertyToName.containsKey(property)) {
 				propertyToName.put(property, new String[2]);
 			}
-			propertyToName.get(property)[i] = getPropertyVertex(property.getInverseProperty(), j);
+			
+			// If the property is an OWLObjectProperty store the name + i
+			if (property instanceof OWLObjectProperty) {
+				propertyToName.get(property)[i] = OntologyDescriptor.getCleanNameOWLObj(property) 
+						+ (i == 0 ? Settings.PROPERTY_0_DESIGNATOR : Settings.PROPERTY_1_DESIGNATOR);
+			} else {
+				// in this case property is an InverseObjectProperty
+				// Therefore swap 0 and 1
+				int j = i == 1 ? 0 : 1;
+				// Recursive call to this method with the inverse property and j
+				propertyToName.get(property)[i] = getPropertyVertex(property.getInverseProperty(), j);
+			}
 		}
+		
+		// Return the stored name for the property
 		return propertyToName.get(property)[i];
 
 	}
 
+	/**
+	 * Connects a list of vertexes stepwise (so it connects the ith vertex with the i+1th vertex
+	 * 
+	 * @param vertList A list of vertexes
+	 */
 	private void connect_vertexes_stepwise(List<String> vertList) {
 		int numOfVert = vertList.size();
 		if (numOfVert > 1) {
