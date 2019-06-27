@@ -348,6 +348,7 @@ public class GraphExporter {
 	public static void init(OWLOntology ontology) {
 
 		try {
+			// Initialize a hierachy structure for the ontology
 			ontHierachy = new OntologyHierarchy(ontology);
 
 			ontDescriptor = new OntologyDescriptor(ontHierachy, ontology);

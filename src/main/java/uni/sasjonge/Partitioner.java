@@ -41,6 +41,8 @@ import uni.sasjonge.utils.OntologyDescriptor;
 
 public class Partitioner {
 	
+	
+	
 	OWLReasonerFactory reasonerFactory;
 	OWLReasoner reasoner;
 	OWLDataFactory df;
@@ -48,9 +50,11 @@ public class Partitioner {
 	
 	public void loadOntology(String input_ontology) {
 		
+		// A string builder to save the evaluation statistics in a string
 		builder = new StringBuilder();
 
 		long startTime = System.nanoTime();
+		// Create a owl manager
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		df = manager.getOWLDataFactory();
 		
@@ -66,8 +70,7 @@ public class Partitioner {
 			long loadStartTime = System.nanoTime();
 			OWLOntology loadedOnt = manager.loadOntology(IRI.create("file:"+input_ontology));
 			
-			
-			// if rdfs:labels are used as name, map them
+			// if rdfs:labels are used as name, map them 
 			if (Settings.USE_RDF_LABEL) {
 				OntologyDescriptor.initRDFSLabel(loadedOnt);
 			}
@@ -122,6 +125,7 @@ public class Partitioner {
 			builder.append((reasonerEndTime - reasonerStartTime)/1000000 + ", ");
 	
 			long reduceStartTime = System.nanoTime();
+			// Remove the "Top-Layer" (the classes highest in the hierachy)
 			OWLOntology ontology = OntologyLevelReducer.removeHighestLevelConc(manager,loadedOnt, reasoner, df, Settings.LAYERS_TO_REMOVE);
 			//OWLOntology ontology = (new OntologyReducer(manager,loadedOnt)).removeHighestLevelConc(3);
 
@@ -158,7 +162,6 @@ public class Partitioner {
 			// Export the graph
 			long startGraphTime = System.nanoTime();
 			GraphExporter.init(oldOntology);
-
 			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
 			 + ".graphml");
 
@@ -187,7 +190,6 @@ public class Partitioner {
 	}
 	
 	private String getFileName(String input_ontology) {
-		// TODO Auto-generated method stub
 		String pre = input_ontology.substring(input_ontology.lastIndexOf("/"));
 		return pre.substring(0, pre.lastIndexOf('.')).replace(", ]", "]");
 	}
@@ -196,33 +198,37 @@ public class Partitioner {
 		return builder != null ? builder.toString() : null;
 	}
 	
-	public static void main(String[] args) {	
+	public static void main(String[] args) {
+		// Read all files in the given directory
 		try (Stream<Path> paths = Files.walk(Paths.get("/home/sascha/Desktop/onts"))) {
 			
+			// Save the statistics for the partitioning in a file
 			File fout = new File("/home/sascha/Desktop/statistics.xml");
 			FileOutputStream fos = new FileOutputStream(fout);
-		 
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 		 
 		    paths
 		        .filter(Files::isRegularFile)
 		        .forEach(e -> {
+		        	// For each file
+		        	// Create a partitioner
 		        	Partitioner part = new Partitioner();
+		        	// Load and partition the ontology
 		        	part.loadOntology(e.toAbsolutePath().toString());		        
 		        	try {
+		        		// Save the statistics of this partition in a string
 		        		String stats = part.getStatistics();
 		        		if (stats != null) {
+		        			// And write it in the output file
 		        			bw.write(stats + "\n");
 		        			bw.flush();
 		        		}
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 		        });
 		    bw.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 	}

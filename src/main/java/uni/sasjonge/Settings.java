@@ -21,6 +21,8 @@ public class Settings {
 	// static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/ncit.national-cancer-institute-thesaurus.47.owl.xml";
 	//static final String INPUT_ONTOLOGY = "file:///home/sascha/workspace/java_ws/partitioner/res/sct-stated-form-2010-01-31.owl";
 
+	// The loading mode: Loading a single ontology or all ontologies containing in a directory
+	
 	// Number of "layers" to remove in the OntologyLevelReducer
 	public static final int LAYERS_TO_REMOVE = 0;
 
