@@ -27,7 +27,7 @@ public class Settings {
 	public static final int LAYERS_TO_REMOVE = 0;
 
 	// File used in the UpperLevelRemover. Should contain upper level ontologies
-	static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
+	public static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
 
 	// Graph visualization
 	// How many individual labels should be shown

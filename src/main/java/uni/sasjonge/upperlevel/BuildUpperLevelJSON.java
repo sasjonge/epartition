@@ -1,4 +1,4 @@
-package uni.sasjonge;
+package uni.sasjonge.upperlevel;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
@@ -6,7 +6,7 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
-import uni.sasjonge.Reducer.UpperLevelManager;
+import uni.sasjonge.Settings;
 
 /**
  * Tool to create a JSON file representing one or more upper level ontology (the JSON file 
