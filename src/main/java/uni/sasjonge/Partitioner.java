@@ -39,9 +39,16 @@ import uni.sasjonge.partitioning.PartitioningCore;
 import uni.sasjonge.utils.GraphExporter;
 import uni.sasjonge.utils.OntologyDescriptor;
 
+/**
+ * 
+ * Partioning of an ontology based on the following paper:
+ * Jongebloed, Sascha, and Thomas Schneider. "Ontology Partitioning Using E-Connections Revisited." MedRACER+ WOMoCoE@ KR. 2018.
+ * Link to paper: http://www.informatik.uni-bremen.de/tdki/research/papers/2018/JS-DL18.pdf
+ * 
+ * @author sascha
+ *
+ */
 public class Partitioner {
-	
-	
 	
 	OWLReasonerFactory reasonerFactory;
 	OWLReasoner reasoner;
@@ -161,39 +168,43 @@ public class Partitioner {
 			
 			// Export the graph
 			long startGraphTime = System.nanoTime();
+			// Initiate the graphexporter (create the hierachy and descriptors)
 			GraphExporter.init(oldOntology);
+			
+			// Create the output graph in form of the cc structure
 			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
 			 + ".graphml");
 
+			// Alternative: Create the complex graph created by the algorithm
 			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
+			
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime)/1000000 + "ms");
 			
 			builder.append((endGraphTime - startGraphTime)/1000000 + ", ");
+			
+			// Add the output graph to the builder
 			builder.append(graphStructure);
-		} catch (OWLOntologyCreationException e) {
-			// TODO Auto-generated catch block
+		} catch (OWLOntologyCreationException|IOException|ExportException e) {
 			e.printStackTrace();
-		} catch (TransformerConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SAXException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ExportException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} 
 	}
 	
+	/**
+	 * Return the filename for a given input ontology 
+	 * 
+	 * @param input_ontology
+	 * @return Filename
+	 */
 	private String getFileName(String input_ontology) {
 		String pre = input_ontology.substring(input_ontology.lastIndexOf("/"));
 		return pre.substring(0, pre.lastIndexOf('.')).replace(", ]", "]");
 	}
 
+	/**
+	 * Return the statistics saved in the builder as a string
+	 * @return String conatining the statistics of this run
+	 */
 	public String getStatistics( ) {
 		return builder != null ? builder.toString() : null;
 	}
