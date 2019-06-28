@@ -28,8 +28,16 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-public class UpperLevelRemover {
+/**
+ * Manages and removes upper level ontology. They can be removed
+ * as a heuristic in the partitioner
+ * 
+ * @author sascha
+ *
+ */
+public class UpperLevelManager {
 	
+	// Stores the upper level ontologies
 	Map<String, Set<String>> upperLevelOntologies;
 	
 	OWLOntologyManager manager;
@@ -39,7 +47,8 @@ public class UpperLevelRemover {
 	
 	String path;
 	
-	public UpperLevelRemover(String pathToUpperLevel) {
+	public UpperLevelManager(String pathToUpperLevel) {
+		// Load the current upperlevel-json file 
 		Gson gson = new Gson();
 		manager = OWLManager.createOWLOntologyManager();
 		path = pathToUpperLevel;
@@ -52,65 +61,106 @@ public class UpperLevelRemover {
 		}
 	}
 	
+	/**
+	 * Given an ontology, check how much of the known upper level ontologies it contains
+	 * 
+	 * @param ontology
+	 * @return Map of upper level ontologies to it portion in the given ontology
+	 */
 	public Map<String, Double> checkForUpperLevel(OWLOntology ontology) {
+		// Map to return
 		Map<String, Double> toReturn = new HashMap<>();
 		
+		// Save the names of all axioms of the ontology in a set of strings
 		Set<String> ontologyAxioms = new HashSet<>();
 		ontology.axioms().forEach(ax -> {
 			ontologyAxioms.add(ax.toString());
 		});
 		
+		// For all upper level ontologies
 		for (Entry<String, Set<String>> upper : upperLevelOntologies.entrySet()) {
+			// Counter for the upper level axioms contained in the given ontology
 			double contained = 0;
 			
+			// For each axiom in the upper level ontology
 			for (String ax : upper.getValue()) {
+				// if it's contained in the iven ontology
 				if (ontologyAxioms.contains(ax)) {
+					// count it
 					contained = contained + 1.0;
 				}
 			};
 			
+			// Calculate the percentage of contained axioms and save it
 			toReturn.put(upper.getKey(), contained/upper.getValue().size());
 		}
 		
 		return toReturn;
 	}
 	
+	/**
+	 * Remove a known upper level ontology from the given ontology
+	 * 
+	 * @param ontology
+	 * @param upperLevelName
+	 * @return Filtered ontology
+	 */
 	public OWLOntology removeUpperLevel(OWLOntology ontology, String upperLevelName) {
-		OWLEntityRemover remover = new OWLEntityRemover(Collections.singleton(ontology));
-		
+
+		// Get the upper level ontology
 		Set<String> upperLevelOntology = upperLevelOntologies.get(upperLevelName);
 		
+		// List to save the axiom we want to remove
 		List<OWLAxiom> axiomsToRemove = new ArrayList<>();
 		
+		// For each axiom in the ontology
 		ontology.axioms().forEach(ax -> {
+			// If the upper level ontology contains it
 			if(upperLevelOntology.contains(ax.toString())) {
+				// add it to the list of axioms which we want to remove
 				axiomsToRemove.add(ax);
 			}
 		});
 		
+		// Remove the axioms
 		manager.removeAxioms(ontology, axiomsToRemove.stream());
 		return ontology;
 	}
 	
-	public void addUpperLevelOntology(OWLOntology ontology) {
-		if (upperLevelOntologies.containsKey(ontology.getOntologyID().toString())) {
-			upperLevelOntologies.remove(ontology.getOntologyID().toString());
+	/**
+	 * Given an ontology containing an upper level ontology,
+	 * at it to the known upper level ontologies
+	 * 
+	 * @param upper Upper level ontology
+	 */
+	public void addUpperLevelOntology(OWLOntology upper) {
+		// If we already know the ontology, remove it (this will allow updates)
+		if (upperLevelOntologies.containsKey(upper.getOntologyID().toString())) {
+			upperLevelOntologies.remove(upper.getOntologyID().toString());
 		}
 		
+		// List of axiom names for the ulo
 		Set<String> listofAxioms = new HashSet<>();
-		
-		ontology.axioms().forEach(e -> {
+		upper.axioms().forEach(e -> {
 			listofAxioms.add(e.toString());
 		});
 		
-		upperLevelOntologies.put(ontology.getOntologyID().toString(), listofAxioms);
+		// Add it to the map of known upper level ontologies
+		upperLevelOntologies.put(upper.getOntologyID().toString(), listofAxioms);
 		
 	}
 	
+	/**
+	 * Simple wrapper
+	 */
 	public void saveToJSONFile() {
 		saveToJSONFile(path);
 	}
 	
+	/**
+	 * Save the known upper level ontologies to the file in json format
+	 * @param outputPath
+	 */
 	public void saveToJSONFile (String outputPath) {
 		System.out.println(upperLevelOntologies.entrySet().iterator().next().getValue().size());
 		String[] path = outputPath.split(File.separator);

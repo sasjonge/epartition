@@ -109,7 +109,7 @@ public class PartitioningCore {
 	 * @throws ExportException
 	 */
 	public List<OWLOntology> partition(OWLOntology ontology)
-			throws TransformerConfigurationException, SAXException, IOException, ExportException {
+			throws IOException, ExportException {
 		// The partitions
 		ArrayList<OWLOntology> toReturn = new ArrayList<>();
 

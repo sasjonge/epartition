@@ -34,7 +34,7 @@ import org.semanticweb.owlapi.util.OWLEntityRemover;
 import org.xml.sax.SAXException;
 
 import uni.sasjonge.Reducer.OntologyLevelReducer;
-import uni.sasjonge.Reducer.UpperLevelRemover;
+import uni.sasjonge.Reducer.UpperLevelManager;
 import uni.sasjonge.partitioning.PartitioningCore;
 import uni.sasjonge.utils.GraphExporter;
 import uni.sasjonge.utils.OntologyDescriptor;
