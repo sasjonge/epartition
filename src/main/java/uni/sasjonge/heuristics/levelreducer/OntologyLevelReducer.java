@@ -1,4 +1,4 @@
-package uni.sasjonge.Reducer;
+package uni.sasjonge.heuristics.levelreducer;
 
 import java.util.Collections;
 import java.util.HashSet;

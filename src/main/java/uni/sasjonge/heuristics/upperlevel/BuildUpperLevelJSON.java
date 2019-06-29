@@ -1,4 +1,4 @@
-package uni.sasjonge.upperlevel;
+package uni.sasjonge.heuristics.upperlevel;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;

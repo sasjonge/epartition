@@ -1,4 +1,4 @@
-package uni.sasjonge.upperlevel;
+package uni.sasjonge.heuristics.upperlevel;
 
 import java.io.File;
 import java.io.FileNotFoundException;
