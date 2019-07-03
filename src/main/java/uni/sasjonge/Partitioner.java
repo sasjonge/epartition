@@ -176,7 +176,8 @@ public class Partitioner {
 			 + ".graphml");
 
 			// Alternative: Create the complex graph created by the algorithm
-			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH);
+			//GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
+			// + ".graphml");
 			
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime)/1000000 + "ms");
@@ -184,7 +185,7 @@ public class Partitioner {
 			builder.append((endGraphTime - startGraphTime)/1000000 + ", ");
 			
 			// Add the output graph to the builder
-			builder.append(graphStructure);
+			//builder.append(graphStructure);
 		} catch (OWLOntologyCreationException|IOException|ExportException e) {
 			e.printStackTrace();
 		} 

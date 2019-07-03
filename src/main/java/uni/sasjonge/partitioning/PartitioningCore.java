@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.xml.transform.TransformerConfigurationException;
@@ -81,6 +82,7 @@ import com.fasterxml.jackson.databind.deser.impl.ExternalTypeHandler.Builder;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassAssertionAxiomImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNaryIndividualAxiomImpl;
 import uni.sasjonge.Settings;
+import uni.sasjonge.heuristics.biconnectivity.BiconnectivityManager;
 import uni.sasjonge.utils.OntologyDescriptor;
 
 /**
@@ -171,6 +173,13 @@ public class PartitioningCore {
 
 		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
+		
+		//*************************Biconnectivity*************************
+		//TODO: Better placement for this methods
+		g = BiconnectivityManager.removeConnectingVertexes(g, ontology.classesInSignature().map(e -> OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toSet()));
+		
+		//****************************************************************
+		
 		long ccStartTime = System.nanoTime();
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);

@@ -62,6 +62,6 @@ public class Settings {
 	// - do we even want to handle them? if false, the tool refuses universal roles
 	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
 	// - if true, we can set a treshold to which point the program 
-	public static final int UNIVERAL_ROLES_TRESHOLD = 5;
+	public static final int UNIVERAL_ROLES_TRESHOLD = 8;
 	
 }
