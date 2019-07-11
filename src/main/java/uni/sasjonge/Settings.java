@@ -52,7 +52,8 @@ public class Settings {
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 4;
 
-	public static final boolean USE_RDF_LABEL = false;
+	public static final boolean USE_RDF_LABEL = true;
+	public static final String lang = "en";
 	
 	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>
 	public static final String PROPERTY_0_DESIGNATOR = "[0]";

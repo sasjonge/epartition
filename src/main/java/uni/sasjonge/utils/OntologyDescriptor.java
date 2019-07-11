@@ -54,6 +54,9 @@ public class OntologyDescriptor {
 	// Symbols to mark groups with e.g. {cat, dog, cow,...},{car, plane, ...}
 	final String GROUP_OPENER = "{";
 	final String GROUP_CLOSER = "}";
+	
+	// Flag if we found a label for initRDFSLabel	
+	static boolean isLabelled = false;
 
 	public OntologyDescriptor(OntologyHierarchy ontHierachy, OWLOntology ontology) {
 		// Save the given Ontology hierachy
@@ -76,50 +79,77 @@ public class OntologyDescriptor {
 
 		// For each class in the signature
 		ont.classesInSignature().forEach(c -> {
+			// Flag if this class is labelled
+			isLabelled = false;
 			// Get the annotation
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				// if the property is a label
 				if (a.getProperty().isLabel()) {
 					// and the annotation value is a literal
 					if (a.getValue() instanceof OWLLiteral) {
-						// get the value. Map the class to the literal name
-						owlObjectToString.put(c, getCleanName(((OWLLiteral) a.getValue()).getLiteral().toString()));
+						// Get the literal
+						OWLLiteral literal = (OWLLiteral) a.getValue();
+						// Check if the language is the one we want
+						if (!literal.hasLang() || literal.hasLang(Settings.lang)){
+							// get the value. Map the class to the literal name
+							owlObjectToString.put(c, getCleanName(literal.getLiteral().toString()));
+							isLabelled = true;
+						}
 					}
 				}
 			});
+			// If the class wasnt labelled, save the cleaned toString result
+			if (!isLabelled) {
+				owlObjectToString.put(c, getCleanName(c.toString()));
+			}
 		});
 
 		// Do the same for the objectproperties,...
 		ont.objectPropertiesInSignature().forEach(c -> {
+			isLabelled = false;
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
 						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						isLabelled = true;
 					}
 				}
 			});
+			if (!isLabelled) {
+				owlObjectToString.put(c, getCleanName(c.toString()));
+			}
 		});
 
 		// ... dataproperties and ...
 		ont.dataPropertiesInSignature().forEach(c -> {
+			isLabelled = false;
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
 						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						isLabelled = true;
 					}
 				}
 			});
+			if (!isLabelled) {
+				owlObjectToString.put(c, getCleanName(c.toString()));
+			}
 		});
 
 		// ... individuals
 		ont.individualsInSignature().forEach(c -> {
+			isLabelled = false;
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
 						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						isLabelled = true;
 					}
 				}
 			});
+			if (!isLabelled) {
+				owlObjectToString.put(c, getCleanName(c.toString()));
+			}
 		});
 
 		// and subconcepts
