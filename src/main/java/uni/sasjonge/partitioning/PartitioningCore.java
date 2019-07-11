@@ -21,6 +21,7 @@ import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.model.ClassExpressionType;
 import org.semanticweb.owlapi.model.HasAxiomsByType;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
+import org.semanticweb.owlapi.model.OWLAnnotationPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
@@ -177,7 +178,7 @@ public class PartitioningCore {
 		// Edge: All sub concepts (corresponding to line 4 of the algorithm in the
 		// paper)
 		long addAxiomEdgeStartTime = System.nanoTime();
-		ontology.logicalAxioms().forEach(this::addAxiomEdges);
+		ontology.axioms().forEach(this::addAxiomEdges);
 		long addAxiomEdgeEndTime = System.nanoTime();
 
 		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
@@ -323,7 +324,23 @@ public class PartitioningCore {
 		String vertex = null;
 
 		switch (ax.getAxiomType().toString()) {
-
+		
+		// --------------------- Non-logical axioms ----------------------
+		case "AnnotationAssertion":
+			OWLAnnotationAssertionAxiom annot = (OWLAnnotationAssertionAxiom) ax;
+			vertex = OntologyDescriptor.getCleanNameOWLObj(annot.getSubject());
+			break;
+			
+		case "Declaration":
+			OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
+			vertex = OntologyDescriptor.getCleanNameOWLObj(decl.getEntity());
+			break;
+			
+		// TODO: Range and Domain
+		//case "AnnotationPropertyRangeOf":
+		//	OWLAnnotationPropertyRangeAxiom annotRange = (OWLAnnotationPropertyRangeAxiom) ax;
+		//	vertex = OntologyDescriptor.getCleanNameOWLObj(annotRange.getS);
+			
 		// Order inspired by https://www.w3.org/TR/owl2-syntax
 		// -------------------- Class Expression Axioms ------------------
 
@@ -372,6 +389,7 @@ public class PartitioningCore {
 			OWLObjectPropertyExpression superProp = subObjectPropAx.getSuperProperty();
 			vertex = getPropertyVertex(subProp, 0);
 			if (!superProp.isOWLTopObjectProperty()) {
+				System.out.println(vertex + "// " + getPropertyVertex(superProp, 0));
 				g.addEdge(vertex, getPropertyVertex(superProp, 0));
 				g.addEdge(getPropertyVertex(subProp, 1), getPropertyVertex(superProp, 1));
 			}
