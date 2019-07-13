@@ -300,7 +300,6 @@ public class GraphExporter {
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
 			public String getName(String vertex) {
-				System.out.println(vertex);
 				return ontDescriptor.getLabelForConnectedComponent(ccToAxiomCount.get(vertex),
 						vertexToClasses.get(vertex), vertexToProperties.get(vertex), vertexToIndividuals.get(vertex))
 						+ (Settings.SHOW_AXIOMS ? "\n" + ontDescriptor.getAxiomString(ccToAxioms.get(vertex)) : "");
