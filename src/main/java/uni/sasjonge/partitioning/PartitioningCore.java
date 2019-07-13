@@ -21,6 +21,7 @@ import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.model.ClassExpressionType;
 import org.semanticweb.owlapi.model.HasAxiomsByType;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
+import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -101,6 +102,7 @@ public class PartitioningCore {
 
 	public Graph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
 	public Map<String, Set<OWLAxiom>> vertexToAxiom = new HashMap<>();
+	Map<OWLAnnotationProperty, Set<OWLAxiom>> annotToAxioms;
 
 	/**
 	 * E-part Algorithm: Partitions the given ontology in several smaller ontologies
@@ -157,6 +159,11 @@ public class PartitioningCore {
 		long addVertexEndTime = System.nanoTime();
 		System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000 + "ms");
 
+		// For every annotation assertion add the corresponding
+		// sub_SubAnnotationPropertyOfAxioms,
+		// AnnotationPropertyRangeAxiom and AnnotationPropertyDomainAxioms
+		annotToAxioms = getAnnotationAxioms(ontology);
+
 		long addSubEdgeStartTime = System.nanoTime();
 
 		// Add the edges according to our defined algorithm
@@ -186,8 +193,10 @@ public class PartitioningCore {
 		// *************************Biconnectivity*************************
 		// TODO: Better placement for this methods
 		g = BiconnectivityManager.removeAxiomCutVertexes(g, labellingVertexes, vertexToAxiom);
-		//g = BiconnectivityManager.removeClassCutVertexes(g, labellingVertexes, ontology.classesInSignature()
-		//		.map(e -> OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toSet()));
+		// g = BiconnectivityManager.removeClassCutVertexes(g, labellingVertexes,
+		// ontology.classesInSignature()
+		// .map(e ->
+		// OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toSet()));
 
 		// ****************************************************************
 
@@ -324,23 +333,35 @@ public class PartitioningCore {
 		String vertex = null;
 
 		switch (ax.getAxiomType().toString()) {
-		
+
 		// --------------------- Non-logical axioms ----------------------
 		case "AnnotationAssertion":
 			OWLAnnotationAssertionAxiom annot = (OWLAnnotationAssertionAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(annot.getSubject());
+			// Also save all all SubAnnotationPropertyOf, AnnotationPropertyRangeOf
+			// and AnnotationPropertyDomainOf axioms containing the used
+			// annotation property
+			if (annotToAxioms.containsKey(annot.getProperty())) {
+				for (OWLAxiom annoAx : annotToAxioms.get(annot.getProperty())) {
+					if (!vertexToAxiom.containsKey(vertex)) {
+						vertexToAxiom.put(vertex, new HashSet<OWLAxiom>());
+					}
+					vertexToAxiom.get(vertex).add(annoAx);
+				}
+			}
 			break;
-			
+
 		case "Declaration":
 			OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
 			vertex = OntologyDescriptor.getCleanNameOWLObj(decl.getEntity());
 			break;
-			
-		// TODO: Range and Domain
-		//case "AnnotationPropertyRangeOf":
-		//	OWLAnnotationPropertyRangeAxiom annotRange = (OWLAnnotationPropertyRangeAxiom) ax;
-		//	vertex = OntologyDescriptor.getCleanNameOWLObj(annotRange.getS);
-			
+
+		// We already handled this axioms in the annotationAssertion case
+		case "AnnotationPropertyRangeOf":
+		case "AnnotationPropertyDomain":
+		case "SubAnnotationPropertyOf":
+			break;
+
 		// Order inspired by https://www.w3.org/TR/owl2-syntax
 		// -------------------- Class Expression Axioms ------------------
 
@@ -660,6 +681,59 @@ public class PartitioningCore {
 			}
 		}
 
+	}
+
+	/**
+	 * Maps all annotation properties to all SubAnnotationPropertyOf,
+	 * AnnotationPropertyRangeOf and AnnotationPropertyDomainOf Axioms containt the
+	 * property
+	 * 
+	 * @param ontology
+	 * @return Map from annotation properties to SubAnnotationPropertyOf,
+	 *         AnnotationPropertyRangeOf and AnnotationPropertyDomainOf Axioms
+	 */
+	private Map<OWLAnnotationProperty, Set<OWLAxiom>> getAnnotationAxioms(OWLOntology ontology) {
+		Map<OWLAnnotationProperty, Set<OWLAxiom>> toReturn = new HashMap<>();
+
+		// For each annotation property...
+		ontology.annotationPropertiesInSignature().forEach(aProp -> {
+			// ... add all domain axioms ...
+			ontology.annotationPropertyDomainAxioms(aProp).forEach(aDomain -> {
+				if (!toReturn.containsKey(aProp)) {
+					toReturn.put(aProp, new HashSet<>());
+				}
+				toReturn.get(aProp).add(aDomain);
+			});
+			// ... add all range axioms ...
+			ontology.annotationPropertyRangeAxioms(aProp).forEach(aRange -> {
+				if (!toReturn.containsKey(aProp)) {
+					toReturn.put(aProp, new HashSet<>());
+				}
+				toReturn.get(aProp).add(aRange);
+			});
+			// ... and all SubAnnotationPropertyOf Axioms with the property as subproperty
+			ontology.subAnnotationPropertyOfAxioms(aProp).forEach(subAnnoAx -> {
+				if (!toReturn.containsKey(aProp)) {
+					toReturn.put(aProp, new HashSet<>());
+				}
+				toReturn.get(aProp).add(subAnnoAx);
+			});
+		});
+
+		// Also get the SubAnnotationPropertyOf Axioms with the property as the
+		// superproperty
+		// For each annotation property...
+		ontology.annotationPropertiesInSignature().forEach(aProp -> {
+			ontology.subAnnotationPropertyOfAxioms(aProp).forEach(subAnnoAx -> {
+				OWLAnnotationProperty superAnnoProp = subAnnoAx.getSuperProperty();
+				if (!toReturn.containsKey(superAnnoProp)) {
+					toReturn.put(superAnnoProp, new HashSet<>());
+				}
+				toReturn.get(superAnnoProp).add(subAnnoAx);
+			});
+		});
+
+		return toReturn;
 	}
 
 }
