@@ -627,11 +627,12 @@ public class OntologyDescriptor {
 	 * @return A String in form of a list of all axioms
 	 */
 	public String getAxiomString(Set<OWLAxiom> axioms) {
+		System.out.println(axioms);
 		if (axioms != null) {
 	
 			// Build the string
 			StringBuilder toReturn = new StringBuilder();
-			toReturn.append("\n--------\nAxioms:\n");
+			toReturn.append("--------\nAxioms:\n");
 			int i = 0;
 			for (OWLAxiom ax : axioms) {
 				// toReturn.append(OntologyDescriptor.getCleanName(getManchesterSyntax(ax)));
@@ -640,6 +641,7 @@ public class OntologyDescriptor {
 				toReturn.append(name.length() > 100 ? name.subSequence(0, 100) : name);
 				toReturn.append("\n");
 				if (i > Settings.AXIOM_COUNT) {
+					toReturn.append("...");
 					break;
 				}
 				i++;

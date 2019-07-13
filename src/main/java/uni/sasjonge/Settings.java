@@ -47,8 +47,8 @@ public class Settings {
 	// Max number of classes per group
 	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
 	
-	// Should axioms be shown?
-	public static final boolean SHOW_AXIOMS = false;
+	// Should axioms be shown in the labels?
+	public static final boolean SHOW_AXIOMS = true;
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 4;
 

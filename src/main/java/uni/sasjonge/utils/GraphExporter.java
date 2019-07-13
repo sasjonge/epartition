@@ -39,6 +39,7 @@ public class GraphExporter {
 
 	// Counts how many axioms belon to a cc
 	static Map<String, Integer> ccToAxiomCount = null;
+	static Map<String, Set<OWLAxiom>> ccToAxioms = null;
 
 	/**
 	 * Exports g in graphML to outputPath Every node and edge is shown as is in the
@@ -115,19 +116,22 @@ public class GraphExporter {
 		// Map the vertexes to the corresponding set of axioms, classes, individuals
 		Map<String, Set<String>> vertexToClasses = new HashMap<>();
 		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
-		Map<String, Set<OWLAxiom>> vertexToAxioms = null;
+		
+		if (Settings.SHOW_AXIOMS) {
+			ccToAxioms = getCCToAxioms(ci.connectedSets(), vertexToAxiom);
+		}
 		
 		// If we want to show axioms in the output graph
 		if (Settings.SHOW_AXIOMS) {
 			
 			// Get the axioms for the cc
-			vertexToAxioms = getCCToAxioms(ci.connectedSets(), vertexToAxiom);
+			ccToAxioms = getCCToAxioms(ci.connectedSets(), vertexToAxiom);
 			
 			// Create the vertexToAxiomsCount Hashmap
 			GraphExporter.ccToAxiomCount = new HashMap<>();
 			
 			// To save the number number of axioms for this cc
-			for (Entry<String, Set<OWLAxiom>> e : vertexToAxioms.entrySet()) {
+			for (Entry<String, Set<OWLAxiom>> e : ccToAxioms.entrySet()) {
 				ccToAxiomCount.put(e.getKey(), e.getValue().size());
 			}
 		} else {
@@ -296,9 +300,10 @@ public class GraphExporter {
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
 			public String getName(String vertex) {
+				System.out.println(vertex);
 				return ontDescriptor.getLabelForConnectedComponent(ccToAxiomCount.get(vertex),
 						vertexToClasses.get(vertex), vertexToProperties.get(vertex), vertexToIndividuals.get(vertex))
-						+ (Settings.SHOW_AXIOMS ? "\n" + ontDescriptor.getAxiomString(vertexToAxioms.get(vertex)) : "");
+						+ (Settings.SHOW_AXIOMS ? "\n" + ontDescriptor.getAxiomString(ccToAxioms.get(vertex)) : "");
 				// + ((axioms.size() < 16) ? "_________\n CC: \n" + vertex : "");
 			}
 		});
@@ -399,6 +404,42 @@ public class GraphExporter {
 		return ccToAxiomsCount;
 	}
 
+
+	/**
+	 * Returns a map from the string representation of the cc to the set of axioms
+	 * that labels all vertexes in the cc
+	 * 
+	 * @param connectedSets
+	 * @param vertexToAxiom
+	 * @return Map from CC to Axioms
+	 */
+	private static Map<String, Set<OWLAxiom>> getAxiomsForCC(List<Set<String>> connectedSets,
+			Map<String, Set<OWLAxiom>> vertexToAxiom) {
+
+		// Create the map to return
+		Map<String, Set<OWLAxiom>> vertexToAxioms = new HashMap<>();
+		
+		// For each cc
+		for (Set<String> cc : connectedSets) {
+			
+			// For each vertex in the cc
+			for (String vert : cc) {
+				
+				// If there are axioms labelling this vertex
+				if (vertexToAxiom.get(vert) != null) {
+					// Add the axioms to the map 
+					if (!vertexToAxioms.containsKey(cc.toString() + "")) {
+						vertexToAxioms.put(cc.toString() + "", new HashSet<>());
+					}
+					vertexToAxioms.get(cc.toString() + "").addAll(vertexToAxiom.get(vert));
+
+				}
+			}
+		}
+
+		return vertexToAxioms;
+	}	
+	
 	/**
 	 * Returns the named classes for the ontology
 	 * 
