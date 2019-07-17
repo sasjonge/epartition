@@ -2,6 +2,8 @@ package uni.sasjonge.partitioning;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -200,6 +202,31 @@ public class PartitioningCore {
 
 		// ****************************************************************
 
+		// Search for components without axiom labels and connect them to a partiton
+		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
+		// Collection of all cc with labels
+		Set<Set<String>> ccWithLabel = new HashSet<>();
+		// Collection of all cc without labels
+		Set<Set<String>> ccWithoutLabel = new HashSet<>();
+		// Collect the ccs into their respective collection
+		ciOld.connectedSets().stream().forEach(cc -> {
+			boolean hasLabel = false;
+			for (String ver : cc) {
+				if (vertexToAxiom.containsKey(ver)) {
+					ccWithLabel.add(cc);
+					hasLabel = true;
+					break;
+				}
+			};
+			if (!hasLabel) {
+				ccWithoutLabel.add(cc);
+			}
+		});
+		// Connect the cc's without a label to cc's with a label (Could be replaced 
+		// by a UI that let users choose to which cc a cc without label should be assigned
+		// to)
+		connectUnLabelledCCToBiggest(g, ccWithLabel, ccWithoutLabel);
+		
 		long ccStartTime = System.nanoTime();
 		// Find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
@@ -207,7 +234,7 @@ public class PartitioningCore {
 		// ci.connectedSets().stream().forEach(System.out::println);
 		System.out.println("Finding the cc's took " + (ccEndTime - ccStartTime) / 1000000 + "ms");
 		System.out.println("CCs: " + ci.connectedSets().size());
-
+		
 		// Create the new ontologies
 		ci.connectedSets().stream().forEach(cc -> {
 			// somehow create the new ontologies
@@ -625,6 +652,23 @@ public class PartitioningCore {
 	}
 
 	Map<OWLObjectPropertyExpression, String[]> propertyToName = new HashMap<>();
+
+	private void connectUnLabelledCCToBiggest(Graph<String, DefaultEdge> g2, Set<Set<String>> ccWithLabel,
+			Set<Set<String>> ccWithoutLabel) {
+		// Sort the ccWithLabel by size
+		Set<Set<String>> ccWithLabelSorted = ccWithLabel.stream().sorted((o1, o2) -> {
+			return o1.size() - o2.size(); 
+		}).collect(Collectors.toSet());;
+				
+		// Get a vertex of the biggest labelled cc
+		String vertexOfLabeledCC = ccWithLabelSorted.iterator().next().iterator().next();
+		
+		// Connect every cc without a label to the biggest by adding
+		// a edge
+		ccWithoutLabel.forEach(cc -> {
+			//g.addEdge(cc.iterator().next(), vertexOfLabeledCC);
+		});
+	}
 
 	/**
 	 * Returns the corresponding vertex while abiding the potential inverses

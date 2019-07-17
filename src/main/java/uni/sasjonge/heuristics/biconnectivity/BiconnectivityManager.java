@@ -36,7 +36,7 @@ public class BiconnectivityManager {
 	public static Graph<String, DefaultEdge> removeAxiomCutVertexes(Graph<String, DefaultEdge> g,
 			Set<String> labellingVertexes, Map<String, Set<OWLAxiom>> vertexToAxiom) {
 
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 0; i++) {
 			System.out.println("----------------removal" + i + "------------------");
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
 
