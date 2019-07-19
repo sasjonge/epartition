@@ -183,18 +183,17 @@ public class PartitioningCore {
 		System.out
 				.println("Adding subconcept edges took " + (addSubEdgeEndTime - addSubEdgeStartTime) / 1000000 + "ms");
 
-		// Edge: All axioms
-		// Edge: All sub concepts (corresponding to line 4 of the algorithm in the
-		// paper)
+		// Add edges for all axioms (corresponding to line 4 of the algorithm in the
+		// paper) 
 		long addAxiomEdgeStartTime = System.nanoTime();
-		ontology.axioms().forEach(this::addAxiomEdges);
+		ontology.logicalAxioms().forEach(this::addAxiomEdges);
 		long addAxiomEdgeEndTime = System.nanoTime();
 
 		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
 		// *************************Biconnectivity*************************
 		// TODO: Better placement for this methods
-		g = BiconnectivityManager.removeAxiomCutVertexes(g, labellingVertexes, vertexToAxiom);
+		// g = BiconnectivityManager.removeAxiomCutVertexes(g, labellingVertexes, vertexToAxiom);
 		// g = BiconnectivityManager.removeClassCutVertexes(g, labellingVertexes,
 		// ontology.classesInSignature()
 		// .map(e ->
@@ -234,6 +233,11 @@ public class PartitioningCore {
 		// ci.connectedSets().stream().forEach(System.out::println);
 		System.out.println("Finding the cc's took " + (ccEndTime - ccStartTime) / 1000000 + "ms");
 		System.out.println("CCs: " + ci.connectedSets().size());
+		
+		// Add Annotations and Declarations as labels to the graph
+		ontology.axioms().filter(ax -> {
+			return !ax.isLogicalAxiom();
+		}).forEach(this::addAxiomEdges);
 		
 		// Create the new ontologies
 		ci.connectedSets().stream().forEach(cc -> {
@@ -666,7 +670,7 @@ public class PartitioningCore {
 		// Connect every cc without a label to the biggest by adding
 		// a edge
 		ccWithoutLabel.forEach(cc -> {
-			//g.addEdge(cc.iterator().next(), vertexOfLabeledCC);
+			g.addEdge(cc.iterator().next(), vertexOfLabeledCC);
 		});
 	}
 

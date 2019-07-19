@@ -211,14 +211,14 @@ public class OntologyDescriptor {
 	 * @param individualsOfCC
 	 * @return Label
 	 */
-	public String getLabelForConnectedComponent(int numOfAxioms, Set<String> classesOfCC, Set<String> propertiesOfCC,
+	public String getLabelForConnectedComponent(int numOfLogicalAxioms, int numOfOtherAxioms, Set<String> classesOfCC, Set<String> propertiesOfCC,
 			Set<String> individualsOfCC) {
 
 		// Create a Stringbuilder to save the label
 		StringBuilder builder = new StringBuilder();
 
 		// Create Header of form AXIOMS / CLASSES / PROPERTIES / INDIVIDUALS
-		builder.append(numOfAxioms + " / " + (classesOfCC != null ? classesOfCC.size() : 0) + " / "
+		builder.append(numOfLogicalAxioms + "(" + numOfOtherAxioms +  ") / " + (classesOfCC != null ? classesOfCC.size() : 0) + " / "
 				+ (propertiesOfCC != null ? propertiesOfCC.size() : 0) + " / "
 				+ (individualsOfCC != null ? individualsOfCC.size() : 0) + "\n");
 
