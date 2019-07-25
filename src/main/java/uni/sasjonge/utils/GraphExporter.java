@@ -93,7 +93,7 @@ public class GraphExporter {
 	 * @throws ExportException
 	 */
 	public static String exportCCStructureGraph(Graph<String, DefaultEdge> g, OWLOntology ontology,
-			Map<String, Set<OWLAxiom>> vertexToAxiom, String outputPath) throws ExportException {
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom, String outputPath) throws ExportException {
 
 		// Create a string builder for the output
 		StringBuilder builder = new StringBuilder();
@@ -119,7 +119,7 @@ public class GraphExporter {
 		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
 
 		// Get the axioms for the cc
-		ccToAxioms = getCCToAxioms(ci.connectedSets(), vertexToAxiom);
+		ccToAxioms = getCCToAxioms(g, ci.connectedSets(), edgeToAxiom);
 
 		// Create the vertexToAxiomsCount Hashmap
 		GraphExporter.ccToLogicalAxiomCount = new HashMap<>();
@@ -302,8 +302,9 @@ public class GraphExporter {
 		exporter.setVertexLabelProvider(new ComponentNameProvider<String>() {
 			@Override
 			public String getName(String vertex) {
-				return ontDescriptor.getLabelForConnectedComponent(ccToLogicalAxiomCount.get(vertex), ccToOtherAxiomCount.get(vertex),
-						vertexToClasses.get(vertex), vertexToProperties.get(vertex), vertexToIndividuals.get(vertex))
+				return ontDescriptor.getLabelForConnectedComponent(ccToLogicalAxiomCount.get(vertex),
+						ccToOtherAxiomCount.get(vertex), vertexToClasses.get(vertex), vertexToProperties.get(vertex),
+						vertexToIndividuals.get(vertex))
 						+ (Settings.SHOW_AXIOMS ? "\n" + ontDescriptor.getAxiomString(ccToAxioms.get(vertex)) : "");
 				// + ((axioms.size() < 16) ? "_________\n CC: \n" + vertex : "");
 			}
@@ -338,11 +339,11 @@ public class GraphExporter {
 	 * axioms return a map, that maps the cc to their axioms
 	 * 
 	 * @param connectedSets
-	 * @param vertexToAxiom
+	 * @param edgeToAxiom
 	 * @return Mapping from cc to axioms
 	 */
-	private static Map<String, Set<OWLAxiom>> getCCToAxioms(List<Set<String>> connectedSets,
-			Map<String, Set<OWLAxiom>> vertexToAxiom) {
+	private static Map<String, Set<OWLAxiom>> getCCToAxioms(Graph<String, DefaultEdge> g,
+			List<Set<String>> connectedSets, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom) {
 
 		// Create the map to map cc to axioms
 		Map<String, Set<OWLAxiom>> ccToAxioms = new HashMap<>();
@@ -353,16 +354,19 @@ public class GraphExporter {
 			// For each vertex in this cc
 			for (String vert : cc) {
 
-				// If there are are axioms for this vertex
-				if (vertexToAxiom.get(vert) != null) {
-					// If the cc isn't already a key in the map create the entry
-					if (!ccToAxioms.containsKey(cc.toString() + "")) {
-						ccToAxioms.put(cc.toString() + "", new HashSet<>());
-					}
-					// and add the axioms
-					ccToAxioms.get(cc.toString() + "").addAll(vertexToAxiom.get(vert));
+				for (DefaultEdge e : g.edgesOf(vert)) {
+					// If there are are axioms for this vertex
+					if (edgeToAxiom.get(e) != null) {
+						// If the cc isn't already a key in the map create the entry
+						if (!ccToAxioms.containsKey(cc.toString() + "")) {
+							ccToAxioms.put(cc.toString() + "", new HashSet<>());
+						}
+						// and add the axioms
+						ccToAxioms.get(cc.toString() + "").addAll(edgeToAxiom.get(e));
 
+					}
 				}
+
 			}
 		}
 

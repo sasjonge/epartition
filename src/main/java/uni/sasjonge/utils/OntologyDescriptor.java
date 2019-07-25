@@ -50,12 +50,12 @@ public class OntologyDescriptor {
 	static Map<String, String> mapVertexToManchester;
 
 	private OntologyHierarchy ontHierachy;
-	
+
 	// Symbols to mark groups with e.g. {cat, dog, cow,...},{car, plane, ...}
 	final String GROUP_OPENER = "{";
 	final String GROUP_CLOSER = "}";
-	
-	// Flag if we found a label for initRDFSLabel	
+
+	// Flag if we found a label for initRDFSLabel
 	static boolean isLabelled = false;
 
 	public OntologyDescriptor(OntologyHierarchy ontHierachy, OWLOntology ontology) {
@@ -90,7 +90,7 @@ public class OntologyDescriptor {
 						// Get the literal
 						OWLLiteral literal = (OWLLiteral) a.getValue();
 						// Check if the language is the one we want
-						if (!literal.hasLang() || literal.hasLang(Settings.lang)){
+						if (!literal.hasLang() || literal.hasLang(Settings.lang)) {
 							// get the value. Map the class to the literal name
 							owlObjectToString.put(c, getCleanName(literal.getLiteral().toString()));
 							isLabelled = true;
@@ -182,24 +182,19 @@ public class OntologyDescriptor {
 	 * @return The cleaned name for the given Object
 	 */
 	public static String getCleanNameOWLObj(OWLObject owlOb) {
-		// If we don't use RDF labels as names
-		if (!Settings.USE_RDF_LABEL) {
-			// Try to get the name of the object from the map
-			String toReturn = owlObjectToString.get(owlOb);
-			// If there is no name mapped
-			if (toReturn == null) {
-				// Calculate the clean name
-				toReturn = getCleanName(owlOb.toString());
-				// And save it in the map
-				owlObjectToString.put(owlOb, toReturn);
-			}
-			// Return the clean name
-			return toReturn;
-		} else {
-			// If we use RDF labels as names, the owlObjectToString map was already
-			// intieated
-			return owlObjectToString.get(owlOb);
+
+		// Try to get the name of the object from the map
+		String toReturn = owlObjectToString.get(owlOb);
+		// If there is no name mapped
+		if (toReturn == null) {
+			// Calculate the clean name
+			toReturn = getCleanName(owlOb.toString());
+			// And save it in the map
+			owlObjectToString.put(owlOb, toReturn);
 		}
+		// Return the clean name
+		return toReturn;
+
 	}
 
 	/**
@@ -211,16 +206,17 @@ public class OntologyDescriptor {
 	 * @param individualsOfCC
 	 * @return Label
 	 */
-	public String getLabelForConnectedComponent(int numOfLogicalAxioms, int numOfOtherAxioms, Set<String> classesOfCC, Set<String> propertiesOfCC,
-			Set<String> individualsOfCC) {
+	public String getLabelForConnectedComponent(int numOfLogicalAxioms, int numOfOtherAxioms, Set<String> classesOfCC,
+			Set<String> propertiesOfCC, Set<String> individualsOfCC) {
 
 		// Create a Stringbuilder to save the label
 		StringBuilder builder = new StringBuilder();
 
 		// Create Header of form AXIOMS / CLASSES / PROPERTIES / INDIVIDUALS
-		builder.append(numOfLogicalAxioms + "(" + numOfOtherAxioms +  ") / " + (classesOfCC != null ? classesOfCC.size() : 0) + " / "
-				+ (propertiesOfCC != null ? propertiesOfCC.size() : 0) + " / "
-				+ (individualsOfCC != null ? individualsOfCC.size() : 0) + "\n");
+		builder.append(
+				numOfLogicalAxioms + "(" + numOfOtherAxioms + ") / " + (classesOfCC != null ? classesOfCC.size() : 0)
+						+ " / " + (propertiesOfCC != null ? propertiesOfCC.size() : 0) + " / "
+						+ (individualsOfCC != null ? individualsOfCC.size() : 0) + "\n");
 
 		// Add classes label
 		if (classesOfCC != null) {
@@ -259,11 +255,13 @@ public class OntologyDescriptor {
 		Map<String, Set<String>> parentsToCollecteddNodes = ontHierachy.getParentToClassesString();
 
 		// Returns a summarized and grouped structure for the classes in the cc
-		// groupStrings is a list of groups of classes. The groups have the same superclass
+		// groupStrings is a list of groups of classes. The groups have the same
+		// superclass
 		List<Collection<String>> groupStrings = new ArrayList<Collection<String>>(groupNodesByParents(nodeToParent,
 				filterNodesByLevel(nodeToParent, parentsToCollecteddNodes, classesOfCC)));
 
-		// Sorts the groupStrings and uses it to create a well formed label for classesOfCC
+		// Sorts the groupStrings and uses it to create a well formed label for
+		// classesOfCC
 		return createStringForGroupedStrings(sortGroupString(groupStrings), Settings.NUM_OF_CLASS_LABELS_TOPLEVEL,
 				Settings.NUM_OF_CLASS_LABELS_SUBLEVEL);
 	}
@@ -278,13 +276,15 @@ public class OntologyDescriptor {
 		// Get the maps from the ontology hierachy
 		Map<String, String> nodeToParent = ontHierachy.getPropertyToParentString();
 		Map<String, Set<String>> parentsToCollecteddNodes = ontHierachy.getParentToPropertiesString();
-	
+
 		// Returns a summarized and grouped structure for the properties in the cc
-		// groupStrings is a list of groups of properties. The groups have the same super property
+		// groupStrings is a list of groups of properties. The groups have the same
+		// super property
 		List<Collection<String>> groupStrings = new ArrayList<Collection<String>>(groupNodesByParents(nodeToParent,
 				filterNodesByLevel(nodeToParent, parentsToCollecteddNodes, propertiesOfCC)));
-	
-		// Sorts the groupStrings and uses it to create a well formed label for propertiesOfCC
+
+		// Sorts the groupStrings and uses it to create a well formed label for
+		// propertiesOfCC
 		return createStringForGroupedStrings(sortGroupString(groupStrings),
 				Settings.NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL, Settings.NUM_OF_CLASS_LABELS_SUBLEVEL);
 	}
@@ -311,7 +311,7 @@ public class OntologyDescriptor {
 	 * parameters
 	 * 
 	 * @param groupedStrings
-	 * @param numberOfTopLevelGroups Max number of top level groups to be shown
+	 * @param numberOfTopLevelGroups    Max number of top level groups to be shown
 	 * @param numberOfValuesPerSubGroup Max number of values per group to be shown
 	 * @return A well formed label
 	 */
@@ -334,19 +334,20 @@ public class OntologyDescriptor {
 		while (addedForTLGroup < numberOfTopLevelGroups && groupIter.hasNext()) {
 			// Increase the counter for the current TL Group
 			addedForTLGroup++;
-			
+
 			// And get the next group
 			group = groupIter.next();
 
-			// If the group has more than one member use the opening bracket, else use nothing
+			// If the group has more than one member use the opening bracket, else use
+			// nothing
 			builder.append(group.size() > 1 ? GROUP_OPENER : "");
-			
+
 			// Counter for how many strings where added for this sub group
 			int addedForThisSubGroup = 0;
 
 			// Get an iterator for the current sub group
 			Iterator<String> iter = group.iterator();
-			
+
 			// While we have added less then allowed strings per this subgroup and while
 			// the are still strings
 			while (addedForThisSubGroup < numberOfValuesPerSubGroup - 1 && iter.hasNext()) {
@@ -361,7 +362,7 @@ public class OntologyDescriptor {
 
 			// if there is another element in this group
 			if (iter.hasNext()) {
-				
+
 				// add "...\n NAMEOFLASTELEMENT}\n" to the string
 				builder.append("...\n");
 				String lastElement = "";
@@ -428,8 +429,8 @@ public class OntologyDescriptor {
 	 * Sum up child groups in the cc to a parent (saved as [parent])
 	 * 
 	 * E.g. if the cc contains cat, dog and horse and cat, dog and horse are the
-	 * only subclasses of animal in our ontology, simply save [animal] as 
-	 * a representative
+	 * only subclasses of animal in our ontology, simply save [animal] as a
+	 * representative
 	 * 
 	 * @param nodeToParent
 	 * @param parentsToCollectedNodes
@@ -477,11 +478,10 @@ public class OntologyDescriptor {
 					&& !containsAncestor(nodeToParent, newCCDescriptor, elementOfCC.replaceAll("^\\[|\\]$", ""))
 					&& !containsAncestor(nodeToParent, cc, elementOfCC.replaceAll("^\\[|\\]$", ""))) {
 				newCCDescriptor.add(elementOfCC);
-				// System.out.println("!!!!! " + elementOfCC);
 			}
 		}
 
-		// If the new descriptor equals the old one, 
+		// If the new descriptor equals the old one,
 		if (newCCDescriptor.equals(cc)) {
 			// return it, because we finished
 			return newCCDescriptor;
@@ -517,7 +517,8 @@ public class OntologyDescriptor {
 			}
 		}
 
-		// If the representant is already in the map and the classes he represents till now
+		// If the representant is already in the map and the classes he represents till
+		// now
 		// Return this number
 		if (numberOfRepresentedClasses.containsKey(nameOfRepresentant)
 				&& numberOfRepresentedClasses.get(nameOfRepresentant).intValue() > toReturn) {
@@ -546,20 +547,20 @@ public class OntologyDescriptor {
 	 * @return
 	 */
 	private Collection<Collection<String>> sortGroupString(List<Collection<String>> groupStrings) {
-	
+
 		// Save the input groupstrings into a List of List
 		List<List<String>> newGroupCollection = groupStrings.stream().map(e -> new ArrayList<String>(e))
 				.collect(Collectors.toList());
-	
+
 		// For each group in this list
 		for (List<String> group : newGroupCollection) {
-	
+
 			// Sort the strings alphabetically
 			Collections.sort(group, String.CASE_INSENSITIVE_ORDER);
-			
+
 			// sort them by the number of represented classes
 			Collections.sort(group, new Comparator<String>() {
-	
+
 				@Override
 				public int compare(String o1, String o2) {
 					if (numberOfRepresentedClasses.containsKey(o1) && numberOfRepresentedClasses.containsKey(o2)) {
@@ -572,16 +573,16 @@ public class OntologyDescriptor {
 					return 0;
 				}
 			});
-	
+
 		}
-	
-		// Now sort the whole list of groups by the sum of represented classes 
+
+		// Now sort the whole list of groups by the sum of represented classes
 		Collections.sort(newGroupCollection, new Comparator<Collection<String>>() {
-	
+
 			@Override
 			public int compare(Collection<String> firstGroup, Collection<String> secondGroup) {
 				int firstGroupValue = 0, secondGroupValue = 0;
-	
+
 				for (String group : firstGroup) {
 					if (numberOfRepresentedClasses.containsKey(group)) {
 						firstGroupValue = firstGroupValue + numberOfRepresentedClasses.get(group);
@@ -589,7 +590,7 @@ public class OntologyDescriptor {
 						firstGroupValue++;
 					}
 				}
-	
+
 				for (String group : secondGroup) {
 					if (numberOfRepresentedClasses.containsKey(group)) {
 						secondGroupValue = secondGroupValue + numberOfRepresentedClasses.get(group);
@@ -597,25 +598,25 @@ public class OntologyDescriptor {
 						secondGroupValue++;
 					}
 				}
-	
+
 				if (firstGroupValue == secondGroupValue) {
 					return firstGroup.toString().compareTo(secondGroup.toString());
 				}
-	
+
 				return secondGroupValue - firstGroupValue;
-	
+
 			}
-	
+
 		});
-	
+
 		// Create the list to return
 		Collection<Collection<String>> toReturn = new ArrayList<>(newGroupCollection.size());
 		for (List<String> element : newGroupCollection) {
 			toReturn.add(element);
 		}
-	
+
 		return toReturn;
-	
+
 	}
 
 	/**
@@ -627,9 +628,8 @@ public class OntologyDescriptor {
 	 * @return A String in form of a list of all axioms
 	 */
 	public String getAxiomString(Set<OWLAxiom> axioms) {
-		System.out.println(axioms);
 		if (axioms != null) {
-	
+
 			// Build the string
 			StringBuilder toReturn = new StringBuilder();
 			toReturn.append("--------\nAxioms:\n");
@@ -647,7 +647,7 @@ public class OntologyDescriptor {
 				i++;
 			}
 			;
-	
+
 			return toReturn.toString();
 		} else {
 			return "";

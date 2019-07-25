@@ -172,7 +172,7 @@ public class Partitioner {
 			GraphExporter.init(oldOntology);
 			
 			// Create the output graph in form of the cc structure
-			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.vertexToAxiom, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
+			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.edgeToAxiom, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) 
 			 + ".graphml");
 
 			// Alternative: Create the complex graph created by the algorithm

@@ -24,7 +24,7 @@ public class Settings {
 	// The loading mode: Loading a single ontology or all ontologies containing in a directory
 	
 	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int LAYERS_TO_REMOVE = 4;
+	public static final int LAYERS_TO_REMOVE = 1;
 
 	// File used in the UpperLevelRemover. Should contain upper level ontologies
 	public static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";

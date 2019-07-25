@@ -66,6 +66,7 @@ public class OntologyLevelReducer {
 					currentClassLevel = newCurrentClassLevel;
 				}
 				i--;
+				//System.out.println(toRemove.toString());
 			}
 
 			// Create a ontology removes
