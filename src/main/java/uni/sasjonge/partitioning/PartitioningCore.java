@@ -677,10 +677,10 @@ public class PartitioningCore {
 		case "Declaration":
 			OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
 			OWLEntity entity = decl.getEntity();
-			if (entity.isOWLObjectProperty() || entity.isOWLDataProperty()) {
+			if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty())) {
 				edge = createLoopEdge(g,
 						OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()) + Settings.PROPERTY_0_DESIGNATOR);
-			} else if (entity.isOWLClass() || entity.isOWLNamedIndividual()) {
+			} else if (!entity.isTopEntity() && (entity.isOWLClass() || entity.isOWLNamedIndividual())) {
 				edge = createLoopEdge(g,
 						OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()));
 			} else if (entity.isOWLAnnotationProperty()) {
