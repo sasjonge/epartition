@@ -106,9 +106,13 @@ import uni.sasjonge.utils.OntologyDescriptor;
 public class PartitioningCore {
 
 	public Graph<String, DefaultEdge> g = new DefaultUndirectedGraph<>(DefaultEdge.class);
-	public Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom = new HashMap<>();
+	// Labelling of edges by axioms
+	public Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms = new HashMap<>();
+	// Save one of the edges of a given edge to have an easier way of recall
+	// We only save edges that are labelled with axioms
+	public Map<DefaultEdge, String> edgeToVertex = new HashMap<>();
 	Map<OWLAnnotationProperty, Set<OWLAxiom>> annotToAxioms;
-	
+
 	/**
 	 * E-part Algorithm: Partitions the given ontology in several smaller ontologies
 	 * and returns them
@@ -204,7 +208,6 @@ public class PartitioningCore {
 		// OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toSet()));
 
 		// ****************************************************************
-
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
 		// Collection of all cc with labels
@@ -216,7 +219,7 @@ public class PartitioningCore {
 			boolean hasLabel = false;
 			for (String ver : cc) {
 				for (DefaultEdge e : g.edgesOf(ver)) {
-					if (edgeToAxiom.containsKey(e)) {
+					if (edgeToAxioms.containsKey(e)) {
 						ccWithLabel.add(cc);
 						hasLabel = true;
 						break;
@@ -243,11 +246,11 @@ public class PartitioningCore {
 		System.out.println("CCs: " + ci.connectedSets().size());
 
 		// Add Annotations and Declarations as labels to the graph
-		ontology.axioms().filter(ax -> {
-			return !ax.isLogicalAxiom();
-		}).forEach(ax -> {
-			addNonLogicalAxiomEdges(ontology, ax);
-		});
+//		ontology.axioms().filter(ax -> {
+//			return !ax.isLogicalAxiom();
+//		}).forEach(ax -> {
+//			addNonLogicalAxiomEdges(ontology, ax);
+//		});
 
 		// Create the new ontologies
 		ci.connectedSets().stream().forEach(cc -> {
@@ -620,13 +623,14 @@ public class PartitioningCore {
 		}
 
 		if (edge != null) {
-			if (!edgeToAxiom.containsKey(edge)) {
-				edgeToAxiom.put(edge, new HashSet<OWLAxiom>());
+			if (!edgeToAxioms.containsKey(edge)) {
+				edgeToAxioms.put(edge, new HashSet<OWLAxiom>());
 			}
-			edgeToAxiom.get(edge).add(ax);
+			edgeToAxioms.get(edge).add(ax);
 		}
+
 	}
-	
+
 	/**
 	 * Adds edges for all non-logical axioms
 	 * 
@@ -662,10 +666,10 @@ public class PartitioningCore {
 				
 				if (annotToAxioms.containsKey(annot.getProperty())) {
 					for (OWLAxiom annoAx : annotToAxioms.get(annot.getProperty())) {
-						if (!edgeToAxiom.containsKey(edgeReference.get())) {
-							edgeToAxiom.put(edgeReference.get(), new HashSet<OWLAxiom>());
+						if (!edgeToAxioms.containsKey(edgeReference.get())) {
+							edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
 						}
-						edgeToAxiom.get(edgeReference.get()).add(annoAx);
+						edgeToAxioms.get(edgeReference.get()).add(annoAx);
 					}
 				}	
 
@@ -704,14 +708,12 @@ public class PartitioningCore {
 		}
 
 		if (edge != null) {
-			if (!edgeToAxiom.containsKey(edge)) {
-				edgeToAxiom.put(edge, new HashSet<OWLAxiom>());
+			if (!edgeToAxioms.containsKey(edge)) {
+				edgeToAxioms.put(edge, new HashSet<OWLAxiom>());
 			}
-			edgeToAxiom.get(edge).add(ax);
+			edgeToAxioms.get(edge).add(ax);
 		}
 	}
-	
-
 
 	Map<OWLObjectPropertyExpression, String[]> propertyToName = new HashMap<>();
 
@@ -793,6 +795,9 @@ public class PartitioningCore {
 			edge = g.getEdge(vertex, vertex2);
 		}
 
+		// Save one of the vertexes to the edge
+		edgeToVertex.put(edge, vertex);
+
 		// And return it
 		return edge;
 	}
@@ -821,10 +826,10 @@ public class PartitioningCore {
 		if (numOfVert > 1) {
 			for (int i = 0; i < numOfVert - 1; i++) {
 				DefaultEdge edge = addEdgeHelp(g, vertList.get(i), vertList.get(i + 1));
-				if (!edgeToAxiom.containsKey(edge)) {
-					edgeToAxiom.put(edge, new HashSet<>());
+				if (!edgeToAxioms.containsKey(edge)) {
+					edgeToAxioms.put(edge, new HashSet<>());
 				}
-				edgeToAxiom.get(edge).add(ax);
+				edgeToAxioms.get(edge).add(ax);
 			}
 		}
 
@@ -882,7 +887,7 @@ public class PartitioningCore {
 				}
 				toReturn.get(aProp).add(subAnnoAx);
 			});
-			
+
 			// Also save the declarations
 			ontology.declarationAxioms(aProp).forEach(decAx -> {
 				if (!toReturn.containsKey(aProp)) {

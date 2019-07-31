@@ -93,7 +93,7 @@ public class GraphExporter {
 	 * @throws ExportException
 	 */
 	public static String exportCCStructureGraph(Graph<String, DefaultEdge> g, OWLOntology ontology,
-			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom, Map<DefaultEdge, String> edgeToVertex, String outputPath)
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, String> edgeToVertex, String outputPath)
 			throws ExportException {
 
 		// Create a string builder for the output
@@ -102,8 +102,6 @@ public class GraphExporter {
 		// Classes and individuals of the given ontology
 		Set<String> classes = getClassesForOntology(ontology);
 		Set<String> individuals = getIndividualsForOntology(ontology);
-
-		System.err.println("!!!!! Step 0");
 
 		// Used to find the connected components
 		ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
@@ -121,18 +119,12 @@ public class GraphExporter {
 		Map<String, Set<String>> vertexToClasses = new HashMap<>();
 		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
 
-		System.err.println("!!!!! Step 01");
-
 		// Get the axioms for the cc
-		ccToAxioms = getCCToAxioms(g, ci.connectedSets(), edgeToAxiom, edgeToVertex);
-
-		System.err.println("!!!!! Step 02");
+		ccToAxioms = getCCToAxioms(g, ci.connectedSets(), edgeToAxioms, edgeToVertex);
 
 		// Create the vertexToAxiomsCount Hashmap
 		GraphExporter.ccToLogicalAxiomCount = new HashMap<>();
 		GraphExporter.ccToOtherAxiomCount = new HashMap<>();
-
-		System.err.println("!!!!! Step 1");
 
 		// To save the number of axioms for this cc
 		for (Entry<String, Set<OWLAxiom>> e : ccToAxioms.entrySet()) {
@@ -147,8 +139,6 @@ public class GraphExporter {
 			ccToLogicalAxiomCount.put(e.getKey(), logicalCount);
 			ccToOtherAxiomCount.put(e.getKey(), otherCount);
 		}
-
-		System.err.println("!!!!! Step 2");
 
 		// For each connected component
 		for (Set<String> cc : ci.connectedSets()) {
@@ -177,8 +167,6 @@ public class GraphExporter {
 			}
 		}
 
-		System.err.println("!!!!! Step 3");
-
 		// Add the opening bracket to the builder
 		builder.append("[");
 
@@ -204,8 +192,6 @@ public class GraphExporter {
 		}
 		;
 
-		System.err.println("!!!!! Step 4");
-
 		// Close the string till her
 		builder.append("], ");
 
@@ -222,8 +208,6 @@ public class GraphExporter {
 			}
 		}
 
-		System.err.println("!!!!! Step 5");
-
 		// Create a map from property vertexes to the cc that contains it
 		Map<String, Set<String>> role0ToCC = new HashMap<>();
 		Map<String, Set<String>> role1ToCC = new HashMap<>();
@@ -239,8 +223,6 @@ public class GraphExporter {
 				}
 			});
 		});
-
-		System.err.println("!!!!! Step 6");
 
 		// find corresponding property nodes (same prefix, ending
 		// with 0 or 1)
@@ -358,7 +340,7 @@ public class GraphExporter {
 	 * axioms return a map, that maps the cc to their axioms
 	 * 
 	 * @param connectedSets
-	 * @param edgeToAxiom
+	 * @param axiomToEdges
 	 * @return Mapping from cc to axioms
 	 */
 	private static Map<String, Set<OWLAxiom>> getCCToAxioms(Graph<String, DefaultEdge> g,
@@ -367,32 +349,19 @@ public class GraphExporter {
 
 		long startTime = System.nanoTime();
 		
+		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
+		
 		// Create the map to map cc to axioms
 		Map<String, Set<OWLAxiom>> ccToAxioms = new HashMap<>();
 		
-		System.out.println(edgeToAxiom.size());
-
-		for (Entry<DefaultEdge, Set<OWLAxiom>> entry : edgeToAxiom.entrySet()) {
-			// Get the OWLAxioms for this edge
-			if (entry.getValue() != null && !entry.getValue().isEmpty()) {
-				// Get the right cc
-				String vert = edgeToVertex.get(entry.getKey());
-				String ccString = null;
-				for (Set<String> cc : connectedSets) {
-					if (cc.contains(vert)) {
-						ccString = cc.toString() + "";
-						break;
-					}
-				}
-				// If the cc isn't already a key in the map create the entry
-				if (!ccToAxioms.containsKey(ccString)) {
-					ccToAxioms.put(ccString, new HashSet<>());
-				}
-				// and add the axioms
-				ccToAxioms.get(ccString).addAll(entry.getValue());
+		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxiom.entrySet()) {
+			String ccName = vertexToCCString.get(edgeToVertex.get(e.getKey()));
+			if (!ccToAxioms.containsKey(ccName)) {
+				ccToAxioms.put(ccName, new HashSet<>());
 			}
+			ccToAxioms.get(ccName).addAll(e.getValue());
 		}
-
+		
 		long endTime = System.nanoTime();
 		System.out.println("getCCToAxioms took " + (endTime - startTime) / 1000000 + "ms");
 
@@ -410,8 +379,9 @@ public class GraphExporter {
 		
 		// This steps should be limited linearly by the number of vertices
 		for (Set<String> cc : connectedSets) {
+			String ccName = cc.toString() + "";
 			for (String vert : cc) {
-				toReturn.put(vert, cc.toString() + "");
+				toReturn.put(vert, ccName);
 			}
 		}
 		
