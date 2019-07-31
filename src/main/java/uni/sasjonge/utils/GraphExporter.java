@@ -347,24 +347,23 @@ public class GraphExporter {
 			List<Set<String>> connectedSets, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom,
 			Map<DefaultEdge, String> edgeToVertex) {
 
-		long startTime = System.nanoTime();
-		
-		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
-		
 		// Create the map to map cc to axioms
 		Map<String, Set<OWLAxiom>> ccToAxioms = new HashMap<>();
 		
+		// Get a map from all vertices to the String representing the CC
+		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
+		
+		// For all Entries that Map a edge to a set of axioms
 		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxiom.entrySet()) {
+			// Get the name of the CC
 			String ccName = vertexToCCString.get(edgeToVertex.get(e.getKey()));
+			// And save all axioms of the edge to it
 			if (!ccToAxioms.containsKey(ccName)) {
 				ccToAxioms.put(ccName, new HashSet<>());
 			}
 			ccToAxioms.get(ccName).addAll(e.getValue());
 		}
 		
-		long endTime = System.nanoTime();
-		System.out.println("getCCToAxioms took " + (endTime - startTime) / 1000000 + "ms");
-
 		return ccToAxioms;
 	}
 
