@@ -1,8 +1,13 @@
 package uni.sasjonge.heuristics.biconnectivity;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jgrapht.Graph;
@@ -10,42 +15,45 @@ import org.jgrapht.alg.connectivity.BiconnectivityInspector;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.parameters.OntologyCopy;
+
+import uni.sasjonge.utils.OntologyDescriptor;
 
 public class BiconnectivityManager {
 
-	public static Graph<String, DefaultEdge> removeClassCutVertexes(Graph<String, DefaultEdge> g,
-			Set<String> labellingVertexes, Set<String> classes) {
+	/**
+	 * Remove bridges that are labelled with axioms. 
+	 * If a bridge with the axiom a is removed, all other axiom edges
+	 * that where only created by a are removed 
+	 *
+	 * @param g
+	 * @param labellingVertexes
+	 * @param edgeToAxioms
+	 * @param createdByAxioms 
+	 * @return
+	 */
+	public static Graph<String, DefaultEdge> removeAxiomLabelledBridges(Graph<String, DefaultEdge> g, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
+		
+		long startTime = System.nanoTime();
 
-		for (int i = 0; i < 1; i++) {
-			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
-
-			Iterator<String> iter = ci.getCutpoints().iterator();
-			while (iter.hasNext()) {
-				String next = iter.next();
-				if (classes.contains(next)) {
-					System.out.println("removed " + next);
-					removeVertexIfNoUnlabelledCC(g, labellingVertexes, next);
-				}
-			}
-			System.out.println("---------------------------------------------------");
-		}
-
-		return g;
-	}
-
-	public static Graph<String, DefaultEdge> removeAxiomCutVertexes(Graph<String, DefaultEdge> g,
-			Set<String> labellingVertexes, Map<String, Set<OWLAxiom>> vertexToAxiom) {
+		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
+		
+		long endTime = System.nanoTime();
+		System.out.println("Inversing edgeToAxioms took " + (endTime - startTime)/1000000 + "ms");	
 
 		for (int i = 0; i < 1; i++) {
 			System.out.println("----------------removal" + i + "------------------");
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
 
-			Iterator<String> iter = ci.getCutpoints().iterator();
+			Iterator<DefaultEdge> iter = ci.getBridges().iterator();
 			while (iter.hasNext()) {
-				String next = iter.next();
-				if (vertexToAxiom.containsKey(next)) {
-					System.out.println("removed " + next);
-					removeVertexIfNoUnlabelledCC(g, labellingVertexes, next);
+				DefaultEdge next = iter.next();
+				// If the edge is labelled
+				if (edgeToAxioms.containsKey(next)) {
+					System.out.println("removed " + OntologyDescriptor.getCleanName(next.toString()));
+					// Remove it and all edges that where only created by the same edges
+					removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, next);
 				}
 			}
 			System.out.println("---------------------------------------------------");
@@ -53,84 +61,89 @@ public class BiconnectivityManager {
 
 		return g;
 	}
+	
+	public static Graph<String, DefaultEdge> removeAxiomLabelledBridgesNew(Graph<String, DefaultEdge> g,
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
+
+		long startTime = System.nanoTime();
+
+		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
+
+		long endTime = System.nanoTime();
+		System.out.println("Inversing edgeToAxioms took " + (endTime - startTime) / 1000000 + "ms");
+
+		for (int i = 0; i < 3; i++) {
+			System.out.println("----------------removal" + i + "------------------");
+			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
+			System.out.println("THERE ARE " + ci.getConnectedComponents().size() + " CC's");
+			List<DefaultEdge> bridgesOfThisStep = new ArrayList<>(ci.getBridges().size());
+			bridgesOfThisStep.addAll(ci.getBridges());
+			bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
+			bridgesOfThisStep.sort(new Comparator<DefaultEdge>() {
+
+				@Override
+				public int compare(DefaultEdge o1, DefaultEdge o2) {
+					int edge1Num = edgeToAxioms.get(o1).size();
+					int edge2Num = edgeToAxioms.get(o2).size();
+					return edge1Num - edge2Num;
+				}
+			});
+
+			DefaultEdge next = bridgesOfThisStep.iterator().next();
+			// If the edge is labelled
+			if (edgeToAxioms.containsKey(next)) {
+				System.out.println("removed " + OntologyDescriptor.getCleanName(next.toString()));
+				// Remove it and all edges that where only created by the same edges
+				removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, next);
+			}
+
+			System.out.println("---------------------------------------------------");
+		}
+
+		return g;
+	}
+
+	private static Map<OWLAxiom, Set<DefaultEdge>> getAxiomToEdges(Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms) {
+		
+		Map<OWLAxiom, Set<DefaultEdge>> axiomsToEdges = new HashMap<>();
+		
+		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxioms.entrySet()) {
+			for (OWLAxiom ax : e.getValue()) {
+				if (!axiomsToEdges.containsKey(ax)) {
+					axiomsToEdges.put(ax, new HashSet<>());
+				}
+				axiomsToEdges.get(ax).add(e.getKey());
+			}
+		}
+		
+		return axiomsToEdges;
+	}
 
 	/**
-	 * Remove the vertex labelled with next from the graph g, only if the removal will
-	 * not create a component without a viable label, like class or individual
-	 * 
+	 * Remove edge, and all other edges that came from the same axiom as the edge
 	 * @param g
-	 * @param labellingVertexes
+	 * @param edgeToAxioms
+	 * @param axiomToEdges 
 	 * @param next
 	 */
-	private static void removeVertexIfNoUnlabelledCC(Graph<String, DefaultEdge> g, Set<String> labellingVertexes,
-			String next) {
-
-		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
-
-		int numberOfSmallComponents = 0;
-
-		for (Set<String> cc : ciOld.connectedSets()) {
-			boolean smallComponent = true;
-			for (String v : cc) {
-				if (labellingVertexes.contains(v)) {
-					smallComponent = false;
-					break;
+	private static void removeAxiomEdgesOf(Graph<String, DefaultEdge> g, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms,
+			Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges, DefaultEdge edge) {
+		if (!edgeToAxioms.containsKey(edge)) {
+			throw new IllegalArgumentException("The edge must be a axiom edge");
+		}
+				
+		for (OWLAxiom ax : edgeToAxioms.get(edge)) {
+			for(DefaultEdge e : axiomToEdges.get(ax)) {
+				edgeToAxioms.get(e).remove(ax);
+				if (edgeToAxioms.get(e).size() < 1) {
+					edgeToAxioms.remove(e);
+					g.removeEdge(e);
+					if (e.equals(edge)) {
+					}
 				}
 			}
-			if (smallComponent) {
-				numberOfSmallComponents++;
-			}
 		}
-		;
-
-		// Save edges for the possibilty to restor the graph
-		Set<DefaultEdge> de = g.edgesOf(next);
-		Set<String> sources = new HashSet<>();
-		Set<String> targets = new HashSet<>();
-		for (DefaultEdge e : de) {
-			if (!g.getEdgeSource(e).equals(next)) {
-				sources.add(g.getEdgeSource(e));
-			}
-			if (!g.getEdgeTarget(e).equals(next)) {
-				targets.add(g.getEdgeTarget(e));
-			}
-
-		}
-
-		// Remove the vertex
-		g.removeVertex(next);
-
-		// Test if the are new small components
-		int newNumberOfSmallComponents = 0;
-
-		ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
-		for (Set<String> cc : ciNew.connectedSets()) {
-			boolean smallComponent = true;
-			for (String v : cc) {
-				if (labellingVertexes.contains(v)) {
-					smallComponent = false;
-					break;
-				}
-			}
-			if (smallComponent) {
-				newNumberOfSmallComponents++;
-			}
-		}
-		;
-
-		if (newNumberOfSmallComponents > numberOfSmallComponents) {
-			// System.out.println("Triggered!!!!!!!" + newNumberOfSmallComponents + "//df" +
-			// numberOfSmallComponents);
-			// Undo the removing
-			g.addVertex(next);
-			for (String source : sources) {
-				g.addEdge(source, next);
-			}
-			for (String target : targets) {
-				g.addEdge(next, target);
-			}
-		} 
-
+		
 	}
 
 }
