@@ -93,7 +93,6 @@ public class BiconnectivityManager {
 			DefaultEdge next = bridgesOfThisStep.iterator().next();
 			// If the edge is labelled
 			if (edgeToAxioms.containsKey(next)) {
-				System.out.println("removed " + OntologyDescriptor.getCleanName(next.toString()));
 				// Remove it and all edges that where only created by the same edges
 				removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, next);
 			}
@@ -112,24 +111,13 @@ public class BiconnectivityManager {
 		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
 
 		long endTime = System.nanoTime();
-		System.out.println("Inversing edgeToAxioms took " + (endTime - startTime) / 1000000 + "ms");
 
 		for (int i = 0; i < 1; i++) {
 			System.out.println("----------------removal" + i + "------------------");
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
-			System.out.println("THERE ARE " + ci.getConnectedComponents().size() + " CC's");
 			List<DefaultEdge> bridgesOfThisStep = new ArrayList<>(ci.getBridges().size());
 			bridgesOfThisStep.addAll(ci.getBridges());
 			bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
-			bridgesOfThisStep.sort(new Comparator<DefaultEdge>() {
-
-				@Override
-				public int compare(DefaultEdge o1, DefaultEdge o2) {
-					int edge1Num = edgeToAxioms.get(o1).size();
-					int edge2Num = edgeToAxioms.get(o2).size();
-					return edge1Num - edge2Num;
-				}
-			});
 
 			// Remove it and all edges that where only created by the same edges
 			removeAxiomEdgesOfNoSingleton(g, edgeToAxioms, axiomToEdges, bridgesOfThisStep.iterator());
@@ -173,20 +161,17 @@ public class BiconnectivityManager {
 		GraphRemovalUndo remover = new GraphRemovalUndo(g);
 
 		for (OWLAxiom ax : edgeToAxioms.get(edge)) {
-			System.out.println("remove axiom " + ax);
 			for (DefaultEdge e : axiomToEdges.get(ax)) {
 				edgeToAxioms.get(e).remove(ax);
 				if (edgeToAxioms.get(e).size() < 1) {
 					edgeToAxioms.remove(e);
 					remover.removeEdge(e);
-					if (e.equals(edge)) {
-						System.out.println("!!!!removed " + e.toString());
-					}
 				}
 			}
 			ax.nestedClassExpressions().forEach(nested -> {
 				remover.removeVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
 			});
+			remover.saveAxiom(ax);
 		}
 
 		return remover;
@@ -199,7 +184,6 @@ public class BiconnectivityManager {
 		boolean removedAxiomEdge = false;
 
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
-		System.out.println("Old num of cc " + ciOld.connectedSets().size());
 
 		int oldNumOfSingletons = 0;
 		for (Set<String> cc : ciOld.connectedSets()) {
@@ -207,29 +191,26 @@ public class BiconnectivityManager {
 				oldNumOfSingletons++;
 			}
 		}
-		System.out.println("Old num of singletons is " + oldNumOfSingletons);
-
 		int newNumOfSingletons = 0;
 
 		while (edgeIterator.hasNext()) {
 			GraphRemovalUndo undoer = removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, edgeIterator.next());
 
 			ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
-			System.out.println("New num of cc " + ciNew.connectedSets().size());
 			for (Set<String> cc : ciNew.connectedSets()) {
 				if (cc.size() < 2) {
 					newNumOfSingletons++;
 				}
 			}
-			System.out.println("New num of cc is " + newNumOfSingletons);
 
 			if (oldNumOfSingletons != newNumOfSingletons) {
-				System.out.println("undo");
 				undoer.undo();
 				newNumOfSingletons = 0;
 			} else {
+				for (OWLAxiom ax : undoer.getAxiom()) {
+					System.out.println(OntologyDescriptor.getCleanNameOWLObj(ax));
+				}
 				removedAxiomEdge = true;
-				break;
 			}
 		}
 
