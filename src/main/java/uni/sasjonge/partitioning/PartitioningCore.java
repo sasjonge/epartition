@@ -202,7 +202,7 @@ public class PartitioningCore {
 
 		// *************************Biconnectivity*************************
 		// TODO: Better placement for this methods
-		g = BiconnectivityManager.removeAxiomLabelledBridgesNew(g, edgeToAxioms, createdByAxioms);
+		g = BiconnectivityManager.removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
 
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
