@@ -47,10 +47,8 @@ public class BiconnectivityManager {
 			// Create the BiconnectivityInspector and get all bridges
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
 			Set<DefaultEdge> bridgesOfThisStep = ci.getBridges();
-			System.out.println(".." + bridgesOfThisStep.size());
 			// Remove the bridges that have no axiom label
 			bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
-			System.out.println("??" + bridgesOfThisStep.size());
 
 			// Save the new size
 			// Remove all label with more than X number of axiom labels
@@ -66,7 +64,6 @@ public class BiconnectivityManager {
 						.filter(p -> (edgeToAxioms.get(p).size() < filterNum)).collect(Collectors.toList());
 			}
 
-			System.out.println("!!" + bridgesOfThisStepFiltered.size());
 			// Remove it and all edges that where only created by the same edges
 			removeAxiomEdgesOfNoSingleton(g, edgeToAxioms, axiomToEdges, bridgesOfThisStepFiltered.iterator());
 
