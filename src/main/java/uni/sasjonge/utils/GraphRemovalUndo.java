@@ -28,17 +28,29 @@ public class GraphRemovalUndo {
 		this.graph = g;
 	}
 	
+	/**
+	 * Remove the vertex from the graph
+	 * 
+	 * @param vert
+	 */
 	public void removeVertex(String vert) {
 		graph.removeVertex(vert);
 		removedVertices.add(vert);
 	}
 	
+	/**
+	 * Remove the edge from the graph
+	 * @param edge
+	 */
 	public void removeEdge(DefaultEdge edge) {
 		removedEdgesMap.put(graph.getEdgeSource(edge), graph.getEdgeTarget(edge));
 		graph.removeEdge(edge);
 		
 	}
 	
+	/**
+	 * Undo the removals done with this class
+	 */
 	public void undo() {
 		for (String vert : removedVertices) {
 			graph.addVertex(vert);
@@ -50,6 +62,7 @@ public class GraphRemovalUndo {
 		removedEdgesMap.clear();
 	}
 
+	// Helper methods to save the removed axioms
 	public void saveAxiom(OWLAxiom ax) {
 		axs.add(ax);
 		

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.BiconnectivityInspector;
@@ -18,203 +20,186 @@ import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.parameters.OntologyCopy;
 
+import uni.sasjonge.Settings;
 import uni.sasjonge.utils.GraphRemovalUndo;
 import uni.sasjonge.utils.OntologyDescriptor;
 
 public class BiconnectivityManager {
 
-    /**
-     * Remove bridges that are labelled with axioms. If a bridge with the axiom a is
-     * removed, all other axiom edges that where only created by a are removed
-     *
-     * @param g
-     * @param labellingVertexes
-     * @param edgeToAxioms
-     * @param createdByAxioms
-     * @return
-     */
-    public static Graph<String, DefaultEdge> removeAxiomLabelledBridges(Graph<String, DefaultEdge> g,
-            Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
+	/**
+	 * Removes all bridges according to the biconnectivtyinspector of jgrapht. The
+	 * graphes need to be labelled by axioms and their removal shouldn't create a
+	 * singleton partiton (a partition with only one vertex)
+	 * 
+	 * @param g
+	 * @param edgeToAxioms
+	 * @param createdByAxioms
+	 * @return
+	 */
+	public static Graph<String, DefaultEdge> removeAxiomLabelledBridgesNoSingletons(Graph<String, DefaultEdge> g,
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
 
-        long startTime = System.nanoTime();
+		// Get a map of axioms to their edges
+		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
 
-        Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
+		for (int i = 0; i < Settings.BH_NUM_OF_REPETITION_OF_HEURISTIC; i++) {
+			System.out.println("----------------removal" + i + "------------------");
+			// Create the BiconnectivityInspector and get all bridges
+			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
+			Set<DefaultEdge> bridgesOfThisStep = ci.getBridges();
+			System.out.println(".." + bridgesOfThisStep.size());
+			// Remove the bridges that have no axiom label
+			bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
+			System.out.println("??" + bridgesOfThisStep.size());
 
-        long endTime = System.nanoTime();
-        System.out.println("Inversing edgeToAxioms took " + (endTime - startTime) / 1000000 + "ms");
+			// Save the new size
+			// Remove all label with more than X number of axiom labels
+			List<DefaultEdge> bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
+					.filter(p -> (edgeToAxioms.get(p).size() < Settings.BH_NUM_OF_AXIOM_LABELS))
+					.collect(Collectors.toList());
+			// Make sure, that at least some labels survive the filter
+			int num_of_axiom_labels = Settings.BH_NUM_OF_AXIOM_LABELS;
+			while (bridgesOfThisStepFiltered.isEmpty()) {
+				num_of_axiom_labels++;
+				final int filterNum = num_of_axiom_labels;
+				bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
+						.filter(p -> (edgeToAxioms.get(p).size() < filterNum)).collect(Collectors.toList());
+			}
 
-        for (int i = 0; i < 1; i++) {
-            System.out.println("----------------removal" + i + "------------------");
-            BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
+			System.out.println("!!" + bridgesOfThisStepFiltered.size());
+			// Remove it and all edges that where only created by the same edges
+			removeAxiomEdgesOfNoSingleton(g, edgeToAxioms, axiomToEdges, bridgesOfThisStepFiltered.iterator());
 
-            Iterator<DefaultEdge> iter = ci.getBridges().iterator();
-            while (iter.hasNext()) {
-                DefaultEdge next = iter.next();
-                // If the edge is labelled
-                if (edgeToAxioms.containsKey(next)) {
-                    System.out.println("removed " + OntologyDescriptor.getCleanName(next.toString()));
-                    // Remove it and all edges that where only created by the same edges
-                    removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, next);
-                }
-            }
-            System.out.println("---------------------------------------------------");
-        }
+			System.out.println("---------------------------------------------------");
+		}
 
-        return g;
-    }
+		return g;
+	}
 
-    public static Graph<String, DefaultEdge> removeAxiomLabelledBridgesNew(Graph<String, DefaultEdge> g,
-            Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
+	/**
+	 * Given a map of edges to axioms calculates the inverse map of axioms to edges
+	 * 
+	 * @param edgeToAxioms
+	 * @return
+	 */
+	private static Map<OWLAxiom, Set<DefaultEdge>> getAxiomToEdges(Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms) {
 
-        long startTime = System.nanoTime();
+		// The Map to Return
+		Map<OWLAxiom, Set<DefaultEdge>> axiomsToEdges = new HashMap<>();
 
-        Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
+		// For each entry of the given map
+		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxioms.entrySet()) {
+			// For each axiom of this edge
+			for (OWLAxiom ax : e.getValue()) {
+				// Add the axiom and corresponding edge to the output 
+				if (!axiomsToEdges.containsKey(ax)) {
+					axiomsToEdges.put(ax, new HashSet<>());
+				}
+				axiomsToEdges.get(ax).add(e.getKey());
+			}
+		}
 
-        long endTime = System.nanoTime();
-        System.out.println("Inversing edgeToAxioms took " + (endTime - startTime) / 1000000 + "ms");
+		return axiomsToEdges;
+	}
 
-        for (int i = 0; i < 3; i++) {
-            System.out.println("----------------removal" + i + "------------------");
-            BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
-            System.out.println("THERE ARE " + ci.getConnectedComponents().size() + " CC's");
-            List<DefaultEdge> bridgesOfThisStep = new ArrayList<>(ci.getBridges().size());
-            bridgesOfThisStep.addAll(ci.getBridges());
-            bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
-            bridgesOfThisStep.sort(new Comparator<DefaultEdge>() {
+	/**
+	 * Removes all axiom labelled edges given by the iterator. If the removal will create
+	 * a singleton component (containing only one vertex) the removal will be undone
+	 * @param g
+	 * @param edgeToAxioms
+	 * @param axiomToEdges
+	 * @param edgeIterator
+	 * @return
+	 */
+	private static boolean removeAxiomEdgesOfNoSingleton(Graph<String, DefaultEdge> g,
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
+			Iterator<DefaultEdge> edgeIterator) {
+		// A flag if atleast one axiom labelled edge was removed
+		boolean removedAxiomEdge = false;
 
-                @Override
-                public int compare(DefaultEdge o1, DefaultEdge o2) {
-                    int edge1Num = edgeToAxioms.get(o1).size();
-                    int edge2Num = edgeToAxioms.get(o2).size();
-                    return edge1Num - edge2Num;
-                }
-            });
+		// Create a connectivity inspector, to count the singletons before the removals
+		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
+		int oldNumOfSingletons = 0;
+		for (Set<String> cc : ciOld.connectedSets()) {
+			if (cc.size() < 2) {
+				oldNumOfSingletons++;
+			}
+		}
+		
+		// Counter for the singletons after the removal
+		int newNumOfSingletons = 0;
 
-            DefaultEdge next = bridgesOfThisStep.iterator().next();
-            // If the edge is labelled
-            if (edgeToAxioms.containsKey(next)) {
-                // Remove it and all edges that where only created by the same edges
-                removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, next);
-            }
+		// For each edge in the iterator
+		while (edgeIterator.hasNext()) {
+			// Remove the edge
+			GraphRemovalUndo undoer = removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, edgeIterator.next());
 
-            System.out.println("---------------------------------------------------");
-        }
+			// Count the number of singletons
+			ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
+			for (Set<String> cc : ciNew.connectedSets()) {
+				if (cc.size() < 2) {
+					newNumOfSingletons++;
+				}
+			}
 
-        return g;
-    }
+			// If there are more singletons than before undo the removal
+			if (oldNumOfSingletons != newNumOfSingletons) {
+				undoer.undo();
+			} else {
+				// Else print the removed axiom
+				for (OWLAxiom ax : undoer.getAxiom()) {
+					System.out.println(OntologyDescriptor.getCleanNameOWLObj(ax));
+				}
+				removedAxiomEdge = true;
+			}
+			// Reset the counter
+			newNumOfSingletons = 0;
+		}
 
-    public static Graph<String, DefaultEdge> removeAxiomLabelledBridgesNoSingletons(Graph<String, DefaultEdge> g,
-            Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
+		return removedAxiomEdge;
+	}
 
-        long startTime = System.nanoTime();
+	/**
+	 * Remove edge, and all other edges that came from the same axiom as the edge
+	 * 
+	 * @param g
+	 * @param edgeToAxioms
+	 * @param axiomToEdges
+	 * @param next
+	 */
+	private static GraphRemovalUndo removeAxiomEdgesOf(Graph<String, DefaultEdge> g,
+			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
+			DefaultEdge edge) {
+		if (!edgeToAxioms.containsKey(edge)) {
+			throw new IllegalArgumentException("The edge must be a axiom edge");
+		}
+		
+		// Instantiate a graphremoval class (which allows to undo the removal9
+		GraphRemovalUndo remover = new GraphRemovalUndo(g);
 
-        Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
+		// For each axiom of the edge
+		for (OWLAxiom ax : edgeToAxioms.get(edge)) {
+			// For each edge that was created by this axiom
+			for (DefaultEdge e : axiomToEdges.get(ax)) {
+				// remove the axiom from the label
+				edgeToAxioms.get(e).remove(ax);
+				// If this was the last axiom of the edge, remove it
+				if (edgeToAxioms.get(e).size() < 1) {
+					edgeToAxioms.remove(e);
+					remover.removeEdge(e);
+				}
+			}
+			// Remove all nested class expressions of the axiom
+			ax.nestedClassExpressions().forEach(nested -> {
+				remover.removeVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
+			});
+			
+			// Remember which axioms where removed
+			remover.saveAxiom(ax);
+		}
 
-        long endTime = System.nanoTime();
+		return remover;
 
-        for (int i = 0; i < 1; i++) {
-            System.out.println("----------------removal" + i + "------------------");
-            BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
-            List<DefaultEdge> bridgesOfThisStep = new ArrayList<>(ci.getBridges().size());
-            bridgesOfThisStep.addAll(ci.getBridges());
-            bridgesOfThisStep.removeIf(p -> !edgeToAxioms.containsKey(p));
-
-            // Remove it and all edges that where only created by the same edges
-            removeAxiomEdgesOfNoSingleton(g, edgeToAxioms, axiomToEdges, bridgesOfThisStep.iterator());
-
-            System.out.println("---------------------------------------------------");
-        }
-
-        return g;
-    }
-
-    private static Map<OWLAxiom, Set<DefaultEdge>> getAxiomToEdges(Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms) {
-
-        Map<OWLAxiom, Set<DefaultEdge>> axiomsToEdges = new HashMap<>();
-
-        for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxioms.entrySet()) {
-            for (OWLAxiom ax : e.getValue()) {
-                if (!axiomsToEdges.containsKey(ax)) {
-                    axiomsToEdges.put(ax, new HashSet<>());
-                }
-                axiomsToEdges.get(ax).add(e.getKey());
-            }
-        }
-
-        return axiomsToEdges;
-    }
-
-    /**
-     * Remove edge, and all other edges that came from the same axiom as the edge
-     * 
-     * @param g
-     * @param edgeToAxioms
-     * @param axiomToEdges
-     * @param next
-     */
-    private static GraphRemovalUndo removeAxiomEdgesOf(Graph<String, DefaultEdge> g,
-            Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
-            DefaultEdge edge) {
-        if (!edgeToAxioms.containsKey(edge)) {
-            throw new IllegalArgumentException("The edge must be a axiom edge");
-        }
-        GraphRemovalUndo remover = new GraphRemovalUndo(g);
-
-        for (OWLAxiom ax : edgeToAxioms.get(edge)) {
-            for (DefaultEdge e : axiomToEdges.get(ax)) {
-                edgeToAxioms.get(e).remove(ax);
-                if (edgeToAxioms.get(e).size() < 1) {
-                    edgeToAxioms.remove(e);
-                    remover.removeEdge(e);
-                }
-            }
-            ax.nestedClassExpressions().forEach(nested -> {
-                remover.removeVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
-            });
-            remover.saveAxiom(ax);
-        }
-
-        return remover;
-
-    }
-
-    private static boolean removeAxiomEdgesOfNoSingleton(Graph<String, DefaultEdge> g,
-            Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
-            Iterator<DefaultEdge> edgeIterator) {
-        boolean removedAxiomEdge = false;
-
-        ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
-
-        int oldNumOfSingletons = 0;
-        for (Set<String> cc : ciOld.connectedSets()) {
-            if (cc.size() < 2) {
-                oldNumOfSingletons++;
-            }
-        }
-        int newNumOfSingletons = 0;
-
-        while (edgeIterator.hasNext()) {
-            GraphRemovalUndo undoer = removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, edgeIterator.next());
-
-            ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
-            for (Set<String> cc : ciNew.connectedSets()) {
-                if (cc.size() < 2) {
-                    newNumOfSingletons++;
-                }
-            }
-
-            if (oldNumOfSingletons != newNumOfSingletons) {
-                undoer.undo();
-                newNumOfSingletons = 0;
-            } else {
-                for (OWLAxiom ax : undoer.getAxiom()) {
-                    System.out.println(OntologyDescriptor.getCleanNameOWLObj(ax));
-                }
-                removedAxiomEdge = true;
-            }
-        }
-
-        return removedAxiomEdge;
-    }
+	}
 
 }

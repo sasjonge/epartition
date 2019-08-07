@@ -200,10 +200,11 @@ public class PartitioningCore {
 
 		System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
-		// *************************Biconnectivity*************************
-		// TODO: Better placement for this methods
-		g = BiconnectivityManager.removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
-
+		// ********************Biconnectivity heuristic********************
+		if (Settings.USE_BH) {
+			g = BiconnectivityManager.removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
+		}
+		
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
