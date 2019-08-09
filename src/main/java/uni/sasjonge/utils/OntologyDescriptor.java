@@ -635,16 +635,19 @@ public class OntologyDescriptor {
 			toReturn.append("--------\nAxioms:\n");
 			int i = 0;
 			for (OWLAxiom ax : axioms) {
-				// toReturn.append(OntologyDescriptor.getCleanName(getManchesterSyntax(ax)));
-				String man = manchester.render(ax);
-				String name = OntologyDescriptor.getCleanName(man);
-				toReturn.append(name.length() > 100 ? name.subSequence(0, 100) : name);
-				toReturn.append("\n");
-				if (i > Settings.AXIOM_COUNT) {
-					toReturn.append("...");
-					break;
+				// Only show logical axioms in the label
+				if (ax.isLogicalAxiom()) {
+					// toReturn.append(OntologyDescriptor.getCleanName(getManchesterSyntax(ax)));
+					String man = manchester.render(ax);
+					String name = OntologyDescriptor.getCleanName(man);
+					toReturn.append(name.length() > 100 ? name.subSequence(0, 100) : name);
+					toReturn.append("\n");
+					if (i > Settings.AXIOM_COUNT) {
+						toReturn.append("...");
+						break;
+					}
+					i++;
 				}
-				i++;
 			}
 			;
 

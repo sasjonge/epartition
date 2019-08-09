@@ -15,6 +15,11 @@ public class Settings {
 	// The output path for the graph
 	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
 	
+	// The type of the output graph:
+	// 0 = Partition structure graph
+	// 1 = Constraint graph
+	public static final int OUTPUT_GRAPH_TYPE = 0;	
+	
 	// The loading mode: Loading a single ontology or all ontologies containing in a directory
 	public static final boolean USE_RDF_LABEL = true;
 	public static final String lang = "en";
@@ -69,5 +74,5 @@ public class Settings {
 	// Should axioms be shown in the labels?
 	public static final boolean SHOW_AXIOMS = true;
 	// If yes, how many?
-	public static final int AXIOM_COUNT = 4;	
+	public static final int AXIOM_COUNT = 26;
 }

@@ -90,18 +90,19 @@ public class Partitioner {
 
 			// Check expressivity of the ontology and either stop or handle the cases
 			long expressStartTime = System.nanoTime();
-			List<OWLAxiom> axiomsContainingUniveralRole = loadedOnt.referencingAxioms(df.getOWLTopObjectProperty())
+			List<OWLAxiom> axiomsContainingUniversalRole = loadedOnt.referencingAxioms(df.getOWLTopObjectProperty())
 					.collect(Collectors.toList());
 
 			// If we have universal roles we remove them to a specific treshhold
-			if (axiomsContainingUniveralRole.size() > 0) {
+			if (axiomsContainingUniversalRole.size() > 0) {
 				if (Settings.HANDLE_UNIVERSAL_ROLES) {
 
-					System.out.println(getFileName(input_ontology) + " has " + axiomsContainingUniveralRole.size());
+					System.out.println(getFileName(input_ontology) + " has " + axiomsContainingUniversalRole.size());
 
-					if (axiomsContainingUniveralRole.size() <= Settings.UNIVERAL_ROLES_TRESHOLD) {
+					if (axiomsContainingUniversalRole.size() <= Settings.UNIVERAL_ROLES_TRESHOLD) {
 						// Remove all axioms containing the universal role
-						loadedOnt.remove(axiomsContainingUniveralRole);
+						System.out.println("Removing " + axiomsContainingUniversalRole.size() + " axioms containig universal roles");
+						loadedOnt.remove(axiomsContainingUniversalRole);
 					} else {
 						builder = null;
 						return;
@@ -182,14 +183,21 @@ public class Partitioner {
 			GraphExporter.init(oldOntology);
 			System.out.println("Finished init");
 
-			// Create the output graph in form of the cc structure
-			String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.edgeToAxioms,
-					pc.edgeToVertex, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
+			// Choose type of output graph
+			switch (Settings.OUTPUT_GRAPH_TYPE) {
 
 			// Alternative: Create the complex graph created by the algorithm
-			// GraphExporter.exportComplexGraph(pc.g, Settings.GRAPH_OUTPUT_PATH +
-			// getFileName(input_ontology)
-			// + ".graphml");
+			case 1:
+				GraphExporter.exportConstraintGraph(pc.g,
+						Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
+				break;
+			// Create the output graph in form of the cc structure
+			case 0:
+			default:
+				String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.edgeToAxioms,
+						pc.edgeToVertex, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
+				break;
+			}
 
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime) / 1000000 + "ms");
@@ -237,17 +245,23 @@ public class Partitioner {
 				// Create a partitioner
 				Partitioner part = new Partitioner();
 				// Load and partition the ontology
-				part.loadOntology(e.toAbsolutePath().toString());
-				try {
-					// Save the statistics of this partition in a string
-					String stats = part.getStatistics();
-					if (stats != null) {
-						// And write it in the output file
-						bw.write(stats + "\n");
-						bw.flush();
+				if (e.toAbsolutePath().toString().endsWith(".owl")) {
+					part.loadOntology(e.toAbsolutePath().toString());
+
+					try {
+						// Save the statistics of this partition in a string
+						String stats = part.getStatistics();
+						if (stats != null) {
+							// And write it in the output file
+							bw.write(stats + "\n");
+							bw.flush();
+						}
+					} catch (IOException e1) {
+						e1.printStackTrace();
 					}
-				} catch (IOException e1) {
-					e1.printStackTrace();
+				} else {
+					System.err.println("The file " + e.toAbsolutePath().toString()
+							+ " isn't a .owl file, therefore, it wont be loaded");
 				}
 			});
 			bw.close();

@@ -50,7 +50,7 @@ public class GraphExporter {
 	 * @param outputPath Parth to output to
 	 * @throws ExportException
 	 */
-	public static void exportComplexGraph(Graph<String, DefaultEdge> g, String outputPath) throws ExportException {
+	public static void exportConstraintGraph(Graph<String, DefaultEdge> g, String outputPath) throws ExportException {
 		GraphMLExporter<String, DefaultEdge> exporter = new GraphMLExporter<>();
 
 		// Register additional name attribute for vertices

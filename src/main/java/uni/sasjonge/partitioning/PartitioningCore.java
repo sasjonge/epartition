@@ -204,7 +204,7 @@ public class PartitioningCore {
 		if (Settings.USE_BH) {
 			g = BiconnectivityManager.removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
 		}
-		
+
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
@@ -244,11 +244,11 @@ public class PartitioningCore {
 		System.out.println("CCs: " + ci.connectedSets().size());
 
 		// Add Annotations and Declarations as labels to the graph
-//		ontology.axioms().filter(ax -> {
-//			return !ax.isLogicalAxiom();
-//		}).forEach(ax -> {
-//			addNonLogicalAxiomEdges(ontology, ax);
-//		});
+		ontology.axioms().filter(ax -> {
+			return !ax.isLogicalAxiom();
+		}).forEach(ax -> {
+			addNonLogicalAxiomEdges(ontology, ax);
+		});
 
 		// Create the new ontologies
 		ci.connectedSets().stream().forEach(cc -> {
@@ -381,6 +381,8 @@ public class PartitioningCore {
 				// Add an edge between the sub- and super class
 				labelledEdge = addEdgeHelp(g, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass()),
 						OntologyDescriptor.getCleanNameOWLObj(subCOf.getSuperClass()));
+			} else {
+				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass()));
 			}
 			break;
 
@@ -424,6 +426,8 @@ public class PartitioningCore {
 					createdByAxioms.put(edge, new HashSet<OWLAxiom>());
 				}
 				createdByAxioms.get(edge).add(ax);
+			} else {
+				labelledEdge = createLoopEdge(g, vertexSubPropZero);
 			}
 			break;
 
@@ -434,9 +438,7 @@ public class PartitioningCore {
 			String vertexPropChain0 = getPropertyVertex(propertyChain.get(0), 0);
 			// Link first Property0 with Superproperty0
 			String superProp2 = getPropertyVertex(propChainAx.getSuperProperty(), 0);
-			if (!vertexPropChain0.equals(superProp2)) {
-				labelledEdge = addEdgeHelp(g, vertexPropChain0, superProp2);
-			}
+			labelledEdge = addEdgeHelp(g, vertexPropChain0, superProp2);
 			// Link last Property1 with Superproperty1
 			DefaultEdge edge = addEdgeHelp(g, getPropertyVertex(propertyChain.get(chainLength - 1), 1),
 					getPropertyVertex(propChainAx.getSuperProperty(), 1));
@@ -497,6 +499,8 @@ public class PartitioningCore {
 				// Connect R0 to the domain
 				labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropDomAx.getProperty(), 0),
 						OntologyDescriptor.getCleanNameOWLObj(objPropDomAx.getDomain()));
+			} else {
+				labelledEdge = createLoopEdge(g, getPropertyVertex(objPropDomAx.getProperty(), 0));
 			}
 			break;
 
@@ -504,8 +508,10 @@ public class PartitioningCore {
 			OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
 			if (!objPropRangeAx.getRange().isOWLThing()) {
 				// Connect R1 to the range
-				labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 1),
+				labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 0),
 						OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
+			} else {
+				labelledEdge = createLoopEdge(g, getPropertyVertex(objPropRangeAx.getProperty(), 0));
 			}
 			break;
 
@@ -542,6 +548,9 @@ public class PartitioningCore {
 								+ Settings.PROPERTY_0_DESIGNATOR,
 						OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSuperProperty())
 								+ Settings.PROPERTY_0_DESIGNATOR);
+			} else {
+				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty())
+								+ Settings.PROPERTY_0_DESIGNATOR);
 			}
 			break;
 
@@ -572,6 +581,9 @@ public class PartitioningCore {
 						OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getProperty())
 								+ Settings.PROPERTY_0_DESIGNATOR,
 						OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getDomain()));
+			} else {
+				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(dataPropDomAx.getProperty())
+						+ Settings.PROPERTY_0_DESIGNATOR);
 			}
 			break;
 
@@ -606,6 +618,8 @@ public class PartitioningCore {
 			// Simply connect the individual and the Class
 			if (!classAssert.getClassExpression().isTopEntity()) {
 				labelledEdge = addEdgeHelp(g, vertex, vertex2);
+			} else {
+				labelledEdge = createLoopEdge(g, vertex);
 			}
 			break;
 
@@ -656,7 +670,16 @@ public class PartitioningCore {
 				createdByAxioms.put(labelledEdge, new HashSet<OWLAxiom>());
 			}
 			createdByAxioms.get(labelledEdge).add(ax);
-		}
+		} 
+//		else {
+//			if (!ax.getAxiomType().toString().equals("EquivalentClasses")
+//					&& !ax.getAxiomType().toString().equals("DisjointClasses")
+//					 && !ax.getAxiomType().toString().equals("DisjointClasses"
+//							 && !ax.getAxiomType().toString().equals("DifferentIndividuals") {
+//				System.err.println("No edge for " + ax);
+//			}
+//
+//		}
 
 	}
 
@@ -839,7 +862,7 @@ public class PartitioningCore {
 	 * @return
 	 */
 	private DefaultEdge createLoopEdge(Graph<String, DefaultEdge> g2, String vertex) {
-		return g.addEdge(vertex, vertex);
+		return addEdgeHelp(g2, vertex, vertex);
 	}
 
 	/**
@@ -850,6 +873,9 @@ public class PartitioningCore {
 	 * @param ax
 	 */
 	private void connect_vertexes_stepwise_labelled(List<String> vertList, OWLAxiom ax) {
+		if (vertList.isEmpty()) {
+			throw new IllegalArgumentException("The vertices-list must be have atleast one element");
+		}
 		boolean labelled = false;
 		if (vertList.size() > 1) {
 			for (String vert1 : vertList) {
@@ -872,6 +898,12 @@ public class PartitioningCore {
 					}
 				}
 			}
+		} else {
+			DefaultEdge edge = createLoopEdge(g, vertList.iterator().next());
+			if (!edgeToAxioms.containsKey(edge)) {
+				edgeToAxioms.put(edge, new HashSet<>());
+			}
+			edgeToAxioms.get(edge).add(ax);
 		}
 
 	}

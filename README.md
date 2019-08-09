@@ -1,6 +1,6 @@
 # EPartition
 
-This project is work in progress. It's an extension / improvement of (Jongebloed S., Schneider T. 2018) for my master thesis.
+This project is work in progress. It's an implementation and extension / improvement of (Jongebloed S., Schneider T. 2018) for my master thesis.
 
 ## Structure
 
