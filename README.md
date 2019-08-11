@@ -7,14 +7,18 @@ This project is work in progress. It's an implementation and extension / improve
 The src files are structured as follows
 
     ├── ...
-    ├── src                     
-    │   ├── Partitioner.java    # The main class to run the project
-    │   ├── Settings.java       # Contains all important settings for this project: In- and output files, output graph  
-    │   │ 				   # visualization options, heuristic options etc.  
-    │   ├── heuristic           # Contains heuristics to reduce the coarseness of the results 
-    │   ├── partitioning        # Contains the main partitioning algortihm
-    │   └── utils               # Contains utility tools, especially for creating an output graph and for labelling
+    ├── src/main/java
+    │   ├── /uni/sasjonge                  
+    │   │   ├── Partitioner.java    # The main class to run the project
+    │   │   ├── Settings.java       # Contains all important settings for this project
+    │   │   │ 				       # visualization options, heuristic options etc.  
+    │   │   ├── heuristic           # Contains heuristics to reduce the coarseness of the results 
+    │   │   ├── partitioning        # Contains the main partitioning algortihm
+    │   │   └── utils               # Contains utility tools, especially for creating an output graph and for labelling
+    │   └── /cwts				  # Data structures and algorithms for network analysis    
     └── ...
+
+/cwts contains a copy of the source files of [this implementation](https://github.com/CWTSLeiden/networkanalysis) by the CWTS Leiden.
 
 ## Usage
 
