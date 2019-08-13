@@ -91,6 +91,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLClassAssertionAxiomImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNaryIndividualAxiomImpl;
 import uni.sasjonge.Settings;
 import uni.sasjonge.heuristics.biconnectivity.BiconnectivityManager;
+import uni.sasjonge.heuristics.communitydetection.CommunityDetectionManager;
 import uni.sasjonge.utils.OntologyDescriptor;
 
 /**
@@ -202,9 +203,15 @@ public class PartitioningCore {
 
 		// ********************Biconnectivity heuristic********************
 		if (Settings.USE_BH) {
-			g = BiconnectivityManager.removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
+			g = (new BiconnectivityManager()).removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
 		}
-
+		
+		// ***************** Community detection heuristic ****************
+		if (Settings.USE_CD) {
+			CommunityDetectionManager cdm = new CommunityDetectionManager(g, edgeToAxioms);
+			g = cdm.removeBridges(edgeToAxioms, createdByAxioms);
+		}
+		
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
