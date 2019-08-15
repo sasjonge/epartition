@@ -27,7 +27,7 @@ public abstract class AxiomLabelledBridgesRemover {
 	 * @return
 	 */
 	protected boolean removeAxiomEdgesOfNoSingleton(Graph<String, DefaultEdge> g,
-			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
+			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels,
 			Iterator<DefaultEdge> edgeIterator) {
 		// A flag if atleast one axiom labelled edge was removed
 		boolean removedAxiomEdge = false;
@@ -47,7 +47,7 @@ public abstract class AxiomLabelledBridgesRemover {
 		// For each edge in the iterator
 		while (edgeIterator.hasNext()) {
 			// Remove the edge
-			GraphRemovalUndo undoer = removeAxiomEdgesOf(g, edgeToAxioms, axiomToEdges, edgeIterator.next());
+			GraphRemovalUndo undoer = removeAxiomEdgesOf(g, createdByAxioms, labels, edgeIterator.next());
 
 			// Count the number of singletons
 			ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
@@ -73,7 +73,7 @@ public abstract class AxiomLabelledBridgesRemover {
 
 		return removedAxiomEdge;
 	}
-
+	
 	/**
 	 * Remove edge, and all other edges that came from the same axiom as the edge
 	 * 
@@ -83,21 +83,25 @@ public abstract class AxiomLabelledBridgesRemover {
 	 * @param next
 	 */
 	private GraphRemovalUndo removeAxiomEdgesOf(Graph<String, DefaultEdge> g,
-			Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms, Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges,
+			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels, 
 			DefaultEdge edge) {
+		
+		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
 		
 		// Instantiate a graphremoval class (which allows to undo the removal9
 		GraphRemovalUndo remover = new GraphRemovalUndo(g);
 
 		// For each axiom of the edge
-		for (OWLAxiom ax : edgeToAxioms.get(edge)) {
+		for (OWLAxiom ax : createdByAxioms.get(edge)) {
 			// For each edge that was created by this axiom
 			for (DefaultEdge e : axiomToEdges.get(ax)) {
 				// remove the axiom from the label
-				edgeToAxioms.get(e).remove(ax);
+				if (labels.containsKey(e) ) {
+					labels.get(e).remove(ax);
+				}
 				// If this was the last axiom of the edge, remove it
-				if (edgeToAxioms.get(e).size() < 1) {
-					edgeToAxioms.remove(e);
+				if (createdByAxioms.get(e).size() < 1) {
+					createdByAxioms.remove(e);
 					remover.removeEdge(e);
 				}
 			}

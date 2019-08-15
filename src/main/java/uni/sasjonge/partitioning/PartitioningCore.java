@@ -205,13 +205,13 @@ public class PartitioningCore {
 		if (Settings.USE_BH) {
 			g = (new BiconnectivityManager()).removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
 		}
-		
+
 		// ***************** Community detection heuristic ****************
 		if (Settings.USE_CD) {
-			CommunityDetectionManager cdm = new CommunityDetectionManager(g, edgeToAxioms);
-			g = cdm.removeBridges(edgeToAxioms, createdByAxioms);
+			CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
+			g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
 		}
-		
+
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
@@ -557,7 +557,7 @@ public class PartitioningCore {
 								+ Settings.PROPERTY_0_DESIGNATOR);
 			} else {
 				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subDataPropAx.getSubProperty())
-								+ Settings.PROPERTY_0_DESIGNATOR);
+						+ Settings.PROPERTY_0_DESIGNATOR);
 			}
 			break;
 
@@ -677,7 +677,7 @@ public class PartitioningCore {
 				createdByAxioms.put(labelledEdge, new HashSet<OWLAxiom>());
 			}
 			createdByAxioms.get(labelledEdge).add(ax);
-		} 
+		}
 //		else {
 //			if (!ax.getAxiomType().toString().equals("EquivalentClasses")
 //					&& !ax.getAxiomType().toString().equals("DisjointClasses")
@@ -715,7 +715,9 @@ public class PartitioningCore {
 					edgeReference.set(createLoopEdge(g,
 							OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity) + Settings.PROPERTY_0_DESIGNATOR));
 				} else if (subjectAsEntity.isOWLClass() || subjectAsEntity.isOWLNamedIndividual()) {
-					edgeReference.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)));
+					if (g.containsVertex(OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity))) {
+						edgeReference.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)));
+					}
 				} else {
 					System.err.println("Missing annotation subject: " + subjectAsEntity.toString());
 				}
@@ -744,7 +746,9 @@ public class PartitioningCore {
 				edge = createLoopEdge(g,
 						OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()) + Settings.PROPERTY_0_DESIGNATOR);
 			} else if (!entity.isTopEntity() && (entity.isOWLClass() || entity.isOWLNamedIndividual())) {
-				edge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()));
+				if (g.containsVertex(OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()))) {
+					edge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()));
+				}
 			} else if (entity.isOWLAnnotationProperty()) {
 
 			} else {

@@ -37,7 +37,7 @@ public class Settings {
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
 	public static final boolean USE_OLH = false;
 	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int OLH_LAYERS_TO_REMOVE = 3;
+	public static final int OLH_LAYERS_TO_REMOVE = 1;
 	
 	// ----------- Biconnectivity Heuristic (BH) --------------
 	// Max number of axioms of labels to remove
@@ -48,6 +48,11 @@ public class Settings {
 	
 	// -------- Community Detection Heuristic (CD) -----------
 	public static final boolean USE_CD = true;
+	// Weight of non axiom edges in the network
+	public static int WEIGHT_FOR_NON_AXIOM_EDGES = 3;
+	// Resolution start-valaue and decrease for leiden
+	public static double RESOLUTION_AT_START = 1d;
+	public static double RESOLUTION_DECREASE = 0.75d;
 
 	// -------- Upper level remover heuristic(ULH) -----------
 	public static final boolean USE_ULH = false;
@@ -78,5 +83,5 @@ public class Settings {
 	// Should axioms be shown in the labels?
 	public static final boolean SHOW_AXIOMS = true;
 	// If yes, how many?
-	public static final int AXIOM_COUNT = 26;
+	public static final int AXIOM_COUNT = 6;
 }
