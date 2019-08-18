@@ -45,14 +45,16 @@ public class Settings {
 	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
 	public static final int BH_NUM_OF_REPETITION_OF_HEURISTIC = 1;
 
-	
 	// -------- Community Detection Heuristic (CD) -----------
 	public static final boolean USE_CD = true;
+	// Flag stating if the louvain or leiden algorithm should be used
+	// true = leiden, false = louvain
+	public static final boolean CD_LEIDEN = true;
 	// Weight of non axiom edges in the network
-	public static int WEIGHT_FOR_NON_AXIOM_EDGES = 3;
-	// Resolution start-valaue and decrease for leiden
-	public static double RESOLUTION_AT_START = 1d;
-	public static double RESOLUTION_DECREASE = 0.75d;
+	public static int CD_WEIGHT_FOR_NON_AXIOM_EDGES = 3;
+	// Resolution start-valaue and decrease for leiden or louvain algorithm
+	public static double CD_RESOLUTION_AT_START = 1d;
+	public static double CD_RESOLUTION_DECREASE = 0.75d;
 
 	// -------- Upper level remover heuristic(ULH) -----------
 	public static final boolean USE_ULH = false;

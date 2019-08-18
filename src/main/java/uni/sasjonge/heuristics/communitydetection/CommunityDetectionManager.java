@@ -14,13 +14,15 @@ import org.jgrapht.graph.DefaultEdge;
 import org.semanticweb.owlapi.model.OWLAxiom;
 
 import cwts.networkanalysis.Clustering;
+import cwts.networkanalysis.IterativeCPMClusteringAlgorithm;
 import cwts.networkanalysis.LeidenAlgorithm;
+import cwts.networkanalysis.LouvainAlgorithm;
 import cwts.networkanalysis.Network;
 import uni.sasjonge.Settings;
 import uni.sasjonge.heuristics.util.AxiomLabelledBridgesRemover;
 
 /**
- * Manages the translation and usage of memory detection algorithm
+ * Manages the translation and usage of memory detection algorithms
  * 
  * @author Sascha Jongebloed
  */
@@ -32,7 +34,7 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 	private Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms;
 	private Network network;
 
-	private LeidenAlgorithm leiden;
+	private IterativeCPMClusteringAlgorithm cdAlgorithm;
 
 	private Clustering clustering;
 	private Map<String, Integer> verticesToId;
@@ -40,7 +42,7 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 	private List<Set<String>> vertexClusters;
 	private Set<DefaultEdge> bridges = null;
 
-	private double resolutionForLeiden = Settings.RESOLUTION_AT_START;
+	private double resolutionForLeiden = Settings.CD_RESOLUTION_AT_START;
 
 	/**
 	 * Calculate the network
@@ -58,13 +60,17 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 	 * Starts the leiden algorithm on the network
 	 */
 	public void startLeidenCommunityDetection() {
-		// Get the leiden Algorithm, and set it's number of iterations
+		// Get the Algorithm, and set it's number of iterations
 		// and the resultion
-		this.leiden = new LeidenAlgorithm();
-		this.leiden.setNIterations(10);
-		this.leiden.setResolution(resolutionForLeiden);
+		if (Settings.CD_LEIDEN) {
+			this.cdAlgorithm = new LeidenAlgorithm();
+		} else {
+			this.cdAlgorithm = new LouvainAlgorithm();
+		}
+		this.cdAlgorithm.setNIterations(10);
+		this.cdAlgorithm.setResolution(resolutionForLeiden);
 		// Start the leiden algorithm to find the cluster
-		this.clustering = this.leiden.findClustering(this.network);
+		this.clustering = this.cdAlgorithm.findClustering(this.network);
 
 		// Save the clustering in a compatible format for out graphs
 		int[] clusters = clustering.getClusters();
@@ -133,7 +139,7 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 		// if the bridges contain bridges that weren't created by axioms (and bridgeSet is not empty)
 		while (!bridgeSet.isEmpty() && !containsOnlyAxiomEdges(bridgeSet, createdByAxioms)) {
 			// Decrease the resolution for leiden
-			resolutionForLeiden = resolutionForLeiden * Settings.RESOLUTION_DECREASE;
+			resolutionForLeiden = resolutionForLeiden * Settings.CD_RESOLUTION_DECREASE;
 			// Restart the translation and leiden
 			translateGraphToLeidenNetwork();
 			startLeidenCommunityDetection();
@@ -196,7 +202,7 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 			if (createdByAxioms.containsKey(e)) {
 				edgeWeights[i] = 1;
 			} else {
-				edgeWeights[i] = Settings.WEIGHT_FOR_NON_AXIOM_EDGES;
+				edgeWeights[i] = Settings.CD_WEIGHT_FOR_NON_AXIOM_EDGES;
 			}
 			i++;
 		}
