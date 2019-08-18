@@ -709,32 +709,33 @@ public class PartitioningCore {
 			// AtomicReferences as Wrapper for the Stream
 			AtomicReference<DefaultEdge> edgeReference = new AtomicReference<>();
 
-			// For each subject
-			ont.entitiesInSignature(annot.getSubject().asIRI().get()).forEach(subjectAsEntity -> {
-				if (subjectAsEntity.isOWLObjectProperty() || subjectAsEntity.isOWLDataProperty()) {
-					edgeReference.set(createLoopEdge(g,
-							OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity) + Settings.PROPERTY_0_DESIGNATOR));
-				} else if (subjectAsEntity.isOWLClass() || subjectAsEntity.isOWLNamedIndividual()) {
-					if (g.containsVertex(OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity))) {
-						edgeReference.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)));
-					}
-				} else {
-					System.err.println("Missing annotation subject: " + subjectAsEntity.toString());
-				}
-				// Also save all all SubAnnotationPropertyOf, AnnotationPropertyRangeOf
-				// and AnnotationPropertyDomainOf axioms containing the used
-				// annotation property
-
-				if (annotToAxioms.containsKey(annot.getProperty())) {
-					for (OWLAxiom annoAx : annotToAxioms.get(annot.getProperty())) {
-						if (!edgeToAxioms.containsKey(edgeReference.get())) {
-							edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
+			if (annot.getSubject().asIRI().isPresent()) {
+				ont.entitiesInSignature(annot.getSubject().asIRI().get()).forEach(subjectAsEntity -> {
+					if (subjectAsEntity.isOWLObjectProperty() || subjectAsEntity.isOWLDataProperty()) {
+						edgeReference.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)
+								+ Settings.PROPERTY_0_DESIGNATOR));
+					} else if (subjectAsEntity.isOWLClass() || subjectAsEntity.isOWLNamedIndividual()) {
+						if (g.containsVertex(OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity))) {
+							edgeReference
+									.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)));
 						}
-						edgeToAxioms.get(edgeReference.get()).add(annoAx);
+					} else {
+						System.err.println("Missing annotation subject: " + subjectAsEntity.toString());
 					}
-				}
+					// Also save all all SubAnnotationPropertyOf, AnnotationPropertyRangeOf
+					// and AnnotationPropertyDomainOf axioms containing the used
+					// annotation property
+					if (annotToAxioms.containsKey(annot.getProperty())) {
+						for (OWLAxiom annoAx : annotToAxioms.get(annot.getProperty())) {
+							if (!edgeToAxioms.containsKey(edgeReference.get())) {
+								edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
+							}
+							edgeToAxioms.get(edgeReference.get()).add(annoAx);
+						}
+					}
 
-			});
+				});
+			}
 
 			edge = edgeReference.get();
 			break;
