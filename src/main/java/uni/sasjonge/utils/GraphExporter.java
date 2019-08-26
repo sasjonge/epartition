@@ -23,6 +23,7 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 
 import uni.sasjonge.Settings;
+import uni.sasjonge.partitioning.PartitioningCore;
 
 /**
  * Utility class for different graph exporting methods
@@ -120,7 +121,7 @@ public class GraphExporter {
 		Map<String, Set<String>> vertexToIndividuals = new HashMap<>();
 
 		// Get the axioms for the cc
-		ccToAxioms = getCCToAxioms(g, ci.connectedSets(), edgeToAxioms, edgeToVertex);
+		ccToAxioms = PartitioningCore.getCCToAxioms(g, ci.connectedSets(), edgeToAxioms, edgeToVertex);
 
 		// Create the vertexToAxiomsCount Hashmap
 		GraphExporter.ccToLogicalAxiomCount = new HashMap<>();
@@ -333,58 +334,6 @@ public class GraphExporter {
 			e.printStackTrace();
 		}
 		return builder.toString();
-	}
-
-	/**
-	 * Given a List of connected components and a map mapping edges to sets of
-	 * axioms return a map, that maps the cc to their axioms
-	 * 
-	 * @param connectedSets
-	 * @param axiomToEdges
-	 * @return Mapping from cc to axioms
-	 */
-	private static Map<String, Set<OWLAxiom>> getCCToAxioms(Graph<String, DefaultEdge> g,
-			List<Set<String>> connectedSets, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom,
-			Map<DefaultEdge, String> edgeToVertex) {
-
-		// Create the map to map cc to axioms
-		Map<String, Set<OWLAxiom>> ccToAxioms = new HashMap<>();
-		
-		// Get a map from all vertices to the String representing the CC
-		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
-		
-		// For all Entries that Map a edge to a set of axioms
-		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxiom.entrySet()) {
-			// Get the name of the CC
-			String ccName = vertexToCCString.get(edgeToVertex.get(e.getKey()));
-			// And save all axioms of the edge to it
-			if (!ccToAxioms.containsKey(ccName)) {
-				ccToAxioms.put(ccName, new HashSet<>());
-			}
-			ccToAxioms.get(ccName).addAll(e.getValue());
-		}
-		
-		return ccToAxioms;
-	}
-
-	/**
-	 * Calculates a map mapping all vertices to the name of the cc
-	 * 
-	 * @param connectedSets
-	 * @return
-	 */
-	private static Map<String, String> getVertexToCCString(List<Set<String>> connectedSets) {
-		Map<String, String> toReturn = new HashMap<>();
-		
-		// This steps should be limited linearly by the number of vertices
-		for (Set<String> cc : connectedSets) {
-			String ccName = cc.toString() + "";
-			for (String vert : cc) {
-				toReturn.put(vert, ccName);
-			}
-		}
-		
-		return toReturn;
 	}
 
 	/**

@@ -9,18 +9,28 @@ import java.net.URI;
  */
 public class Settings {
 	
+	// -------------------------- INPUT ONTOLOGIES -----------------------------
 	// The input directory where the .owl files should be
 	public static final String ONTOLOGIES_DIRECTORY = "/home/sascha/Desktop/onts";
 	
+	// ----------------------- GRAPH OUTPUT ------------------------------------
 	// The output path for the graph
 	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
-	
+
 	// The type of the output graph:
 	// 0 = Partition structure graph
 	// 1 = Constraint graph
 	public static final int OUTPUT_GRAPH_TYPE = 0;	
+
+	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
+	// The output path for the graph
+	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
 	
-	// The loading mode: Loading a single ontology or all ontologies containing in a directory
+	// Should the created partitions exported as owl?
+	public static final boolean EXPORT_ONTOLOGIES = true;
+
+	
+	// Handling of RDF labels as names and the used lang 
 	public static final boolean USE_RDF_LABEL = true;
 	public static final String lang = "en";
 	
@@ -86,4 +96,5 @@ public class Settings {
 	public static final boolean SHOW_AXIOMS = true;
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 6;
+
 }

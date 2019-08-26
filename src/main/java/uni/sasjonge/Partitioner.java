@@ -2,6 +2,7 @@ package uni.sasjonge;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -14,16 +15,20 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.print.FlavorException;
 import javax.xml.transform.TransformerConfigurationException;
 
 import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.formats.OWLXMLDocumentFormat;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLDocumentFormat;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 import org.semanticweb.owlapi.model.OWLPrimitive;
 import org.semanticweb.owlapi.model.parameters.OntologyCopy;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
@@ -46,7 +51,7 @@ import uni.sasjonge.utils.OntologyDescriptor;
  * MedRACER+ WOMoCoE@ KR. 2018. Link to paper:
  * http://www.informatik.uni-bremen.de/tdki/research/papers/2018/JS-DL18.pdf
  * 
- * @author sascha
+ * @author Sascha Jongebloed
  *
  */
 public class Partitioner {
@@ -101,7 +106,8 @@ public class Partitioner {
 
 					if (axiomsContainingUniversalRole.size() <= Settings.UNIVERAL_ROLES_TRESHOLD) {
 						// Remove all axioms containing the universal role
-						System.out.println("Removing " + axiomsContainingUniversalRole.size() + " axioms containig universal roles");
+						System.out.println("Removing " + axiomsContainingUniversalRole.size()
+								+ " axioms containig universal roles");
 						loadedOnt.remove(axiomsContainingUniversalRole);
 					} else {
 						builder = null;
@@ -167,15 +173,23 @@ public class Partitioner {
 			System.out.println("Partitioning took " + (endPartTime - startPartTime) / 1000000 + "ms");
 			builder.append((endPartTime - startPartTime) / 1000000 + ", ");
 
-			// Export the onotologys
-			// partitionedOntologies.stream().forEach(t -> {
-			// partitionedOntologies.stream().forEach(t -> {
-			// try {
-			// manager.saveOntology(t);
-			// } catch (OWLOntologyStorageException e) {
-			// e.printStackTrace();
-			// }
-			// });
+			if (Settings.EXPORT_ONTOLOGIES) {
+				// Get the name (last part of the iri) to save the file (use the input)
+				String fName = input_ontology.substring(input_ontology.lastIndexOf("/")).replaceAll(".owl", "");
+				// Format for the ontologies
+				OWLDocumentFormat format = new OWLXMLDocumentFormat();
+				// Export the ontologys
+				int fCounter = 1;
+				for (OWLOntology part : partitionedOntologies) {
+					try (FileOutputStream output = new FileOutputStream(
+							Settings.ONOTOLOGY_OUTPUT_PATH + fName + "_" + fCounter + ".owl")) {
+						manager.saveOntology(part, format, output);
+						fCounter++;
+					} catch (OWLOntologyStorageException | FileNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 
 			// Export the graph
 			long startGraphTime = System.nanoTime();

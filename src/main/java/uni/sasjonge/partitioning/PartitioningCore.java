@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -22,8 +24,10 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.ExportException;
+import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.ClassExpressionType;
 import org.semanticweb.owlapi.model.HasAxiomsByType;
+import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationPropertyRangeAxiom;
@@ -44,6 +48,7 @@ import org.semanticweb.owlapi.model.OWLDisjointClassesAxiom;
 import org.semanticweb.owlapi.model.OWLDisjointDataPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLDisjointObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLDisjointUnionAxiom;
+import org.semanticweb.owlapi.model.OWLDocumentFormat;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLEntityByTypeProvider;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
@@ -71,6 +76,8 @@ import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLPropertyExpression;
 import org.semanticweb.owlapi.model.OWLQuantifiedDataRestriction;
@@ -128,8 +135,9 @@ public class PartitioningCore {
 	 * @throws ExportException
 	 */
 	public List<OWLOntology> partition(OWLOntology ontology) throws IOException, ExportException {
+
 		// The partitions
-		ArrayList<OWLOntology> toReturn = new ArrayList<>();
+		List<OWLOntology> toReturn = new ArrayList<>();
 
 		long addVertexStartTime = System.nanoTime();
 
@@ -211,6 +219,12 @@ public class PartitioningCore {
 			CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
 			g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
 		}
+		
+		// ******************* Remove labels of removed edges *************
+		if (Settings.USE_CD || Settings.USE_BH) {
+			edgeToAxioms = edgeToAxioms.entrySet().stream().filter(t -> g.containsEdge(t.getKey())).collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+		}
+		System.out.println("EdgeToAxiom has null key? " + edgeToAxioms.containsKey(null));
 
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
@@ -257,10 +271,10 @@ public class PartitioningCore {
 			addNonLogicalAxiomEdges(ontology, ax);
 		});
 
-		// Create the new ontologies
-		ci.connectedSets().stream().forEach(cc -> {
-			// somehow create the new ontologies
-		});
+		// Create the new ontologies (if flag is set, that we need them for the output)
+		if (Settings.EXPORT_ONTOLOGIES) {
+			toReturn = createOntologyFromCC(ci.connectedSets(), ontology);
+		}
 
 		// Return the created new ontologies
 		return toReturn;
@@ -678,15 +692,6 @@ public class PartitioningCore {
 			}
 			createdByAxioms.get(labelledEdge).add(ax);
 		}
-//		else {
-//			if (!ax.getAxiomType().toString().equals("EquivalentClasses")
-//					&& !ax.getAxiomType().toString().equals("DisjointClasses")
-//					 && !ax.getAxiomType().toString().equals("DisjointClasses"
-//							 && !ax.getAxiomType().toString().equals("DifferentIndividuals") {
-//				System.err.println("No edge for " + ax);
-//			}
-//
-//		}
 
 	}
 
@@ -1007,4 +1012,113 @@ public class PartitioningCore {
 		return toReturn;
 	}
 
+	/**
+	 * Creates an owl ontology out of a cc
+	 * 
+	 * @param cc
+	 * @param cc
+	 * @return
+	 */
+	private List<OWLOntology> createOntologyFromCC(List<Set<String>> cc, OWLOntology parentOntology) {
+		// The list of ontologies to return
+		List<OWLOntology> toReturn = new ArrayList<>();
+		
+
+		if (cc.size() > 1) {
+			// Get a map of cc's to set of their axioms
+			Map<String, Set<OWLAxiom>> ccToAxioms = getCCToAxioms(g, cc, edgeToAxioms, edgeToVertex);
+
+			// Create a owl manager
+			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+
+			// Save name of parent ontology
+			String parentIRIString = null;
+			Optional<IRI> parentIRI = parentOntology.getOntologyID().getOntologyIRI();
+			if (parentIRI.isPresent()) {
+				parentIRIString = parentIRI.get().getIRIString();
+			}
+
+			// A counterr for the number of the partition
+			int partitionNum = 1;
+			// For each axiomset
+			for (Set<OWLAxiom> axs : ccToAxioms.values()) {
+				try {
+					// TODO: Give ontology names. How to handle econnection?
+					OWLOntology ont = null;
+					if (parentIRIString == null) {
+						ont = manager.createOntology(axs);
+						
+					} else {
+						ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".ow"));
+					}
+					toReturn.add(ont);
+					partitionNum++;
+				} catch (OWLOntologyCreationException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			// If there is only one patition, just return the parent ontology
+			toReturn.add(parentOntology);
+		}
+
+		return toReturn;
+	}
+
+	/**
+	 * Given a List of connected components and a map mapping edges to sets of
+	 * axioms return a map, that maps the cc to their axioms
+	 * 
+	 * @param connectedSets
+	 * @param axiomToEdges
+	 * @return Mapping from cc to axioms
+	 */
+	public static Map<String, Set<OWLAxiom>> getCCToAxioms(Graph<String, DefaultEdge> g,
+			List<Set<String>> connectedSets, Map<DefaultEdge, Set<OWLAxiom>> edgeToAxiom,
+			Map<DefaultEdge, String> edgeToVertex) {
+
+		// Create the map to map cc to axioms
+		Map<String, Set<OWLAxiom>> ccToAxioms = new HashMap<>();
+
+		// Get a map from all vertices to the String representing the CC
+		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
+		
+		// For all Entries that Map a edge to a set of axioms
+		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxiom.entrySet()) {
+			// Get the name of the CC
+			String ccName = vertexToCCString.get(edgeToVertex.get(e.getKey()));
+			if (ccName == null) {
+				System.out.println("!!!!" + e.getKey());
+			}
+			// And save all axioms of the edge to it
+			if (!ccToAxioms.containsKey(ccName)) {
+				ccToAxioms.put(ccName, new HashSet<>());
+			}
+			ccToAxioms.get(ccName).addAll(e.getValue());
+		}
+		
+		System.out.println(ccToAxioms.toString());
+
+		return ccToAxioms;
+	}
+
+	/**
+	 * Calculates a map mapping all vertices to the name of the cc
+	 * 
+	 * @param connectedSets
+	 * @return
+	 */
+	private static Map<String, String> getVertexToCCString(List<Set<String>> connectedSets) {
+		Map<String, String> toReturn = new HashMap<>();
+
+		// This steps should be limited linearly by the number of vertices
+		for (Set<String> cc : connectedSets) {
+			String ccName = cc.toString() + "";
+			for (String vert : cc) {
+				toReturn.put(vert, ccName);
+			}
+		}
+
+		return toReturn;
+	}
 }
