@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collector;
@@ -40,25 +41,31 @@ public class BiconnectivityManager extends AxiomCreatedBridgesRemoverHeuristic {
 	public Graph<String, DefaultEdge> removeAxiomLabelledBridgesNoSingletons(Graph<String, DefaultEdge> g,
 			Map<DefaultEdge, Set<OWLAxiom>> labels, Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms) {
 
-		for (int i = 0; i < Settings.BH_NUM_OF_REPETITION_OF_HEURISTIC; i++) {
-			System.out.println("----------------removal" + i + "------------------");
+		int maxNumberOfCreatorAxioms = createdByAxioms.entrySet().stream().mapToInt(e -> e.getValue().size()).max()
+				.orElseThrow(NoSuchElementException::new);
+
+		for (int i = 0; i <= Settings.BH_NUM_OF_REPETITION_OF_HEURISTIC; i++) {
+			if (Settings.PRINT_REMOVED_AXIOMS) {
+				System.out.println("----------------removal" + i + "------------------");
+			}
 			// Create the BiconnectivityInspector and get all bridges
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
 			Set<DefaultEdge> bridgesOfThisStep = ci.getBridges();
 			// Remove the bridges that weren't created by axioms
 			bridgesOfThisStep.removeIf(p -> !createdByAxioms.containsKey(p));
 
-			// Remove all edges with more than X number of axioms that created them (if possible
+			// Remove all edges with more than X number of axioms that created them (if
+			// possible
 			// we want to remove only edges with X labels, to reduce the overall
 			// removal of axioms)
 			List<DefaultEdge> bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
 					.filter(p -> (createdByAxioms.get(p).size() < Settings.BH_NUM_OF_AXIOM_LABELS))
 					.collect(Collectors.toList());
 			// Make sure, that at least some edges survive the filter
-			int num_of_axiom_labels = Settings.BH_NUM_OF_AXIOM_LABELS;
-			while (bridgesOfThisStepFiltered.isEmpty()) {
-				num_of_axiom_labels++;
-				final int filterNum = num_of_axiom_labels;
+			int numOfAxiomLabels = Settings.BH_NUM_OF_AXIOM_LABELS;
+			while (bridgesOfThisStepFiltered.isEmpty() && numOfAxiomLabels <= maxNumberOfCreatorAxioms) {
+				numOfAxiomLabels++;
+				final int filterNum = numOfAxiomLabels;
 				bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
 						.filter(p -> (createdByAxioms.get(p).size() < filterNum)).collect(Collectors.toList());
 			}
@@ -66,7 +73,9 @@ public class BiconnectivityManager extends AxiomCreatedBridgesRemoverHeuristic {
 			// Remove it and all edges that where only created by the same axioms
 			this.removeAxiomEdgesOfNoSingleton(g, createdByAxioms, labels, bridgesOfThisStepFiltered.iterator());
 
-			System.out.println("---------------------------------------------------");
+			if (Settings.PRINT_REMOVED_AXIOMS) {
+				System.out.println("---------------------------------------------------");
+			}
 		}
 
 		return g;

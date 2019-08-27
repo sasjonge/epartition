@@ -212,12 +212,14 @@ public class PartitioningCore {
 		// ********************Biconnectivity heuristic********************
 		if (Settings.USE_BH) {
 			g = (new BiconnectivityManager()).removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
+			System.out.println("Finished biconnectivity heuristic");
 		}
 
 		// ***************** Community detection heuristic ****************
 		if (Settings.USE_CD) {
 			CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
 			g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
+			System.out.println("Finished community detection heuristic");
 		}
 
 		// ******************* Remove labels of removed edges *************
@@ -225,7 +227,6 @@ public class PartitioningCore {
 			edgeToAxioms = edgeToAxioms.entrySet().stream().filter(t -> g.containsEdge(t.getKey()))
 					.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
 		}
-		System.out.println("EdgeToAxiom has null key? " + edgeToAxioms.containsKey(null));
 
 		// ****************************************************************
 		// Search for components without axiom labels and connect them to a partiton
@@ -251,6 +252,16 @@ public class PartitioningCore {
 				ccWithoutLabel.add(cc);
 			}
 		});
+		
+		// If we have no cc with a label, then the heuristic removed everything. Show a error message 
+		// and return the original ontology
+		if (ccWithLabel.isEmpty()) {
+			System.err.println("All axioms where removed. The reason is probably a too strong heuristic!");
+			toReturn.clear();
+			toReturn.add(ontology);
+			return toReturn;
+		}
+		
 		// Connect the cc's without a label to cc's with a label (Could be replaced
 		// by a UI that let users choose to which cc a cc without label should be
 		// assigned

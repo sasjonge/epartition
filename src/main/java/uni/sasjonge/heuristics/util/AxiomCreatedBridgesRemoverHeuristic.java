@@ -12,14 +12,17 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.semanticweb.owlapi.model.OWLAxiom;
 
+import uni.sasjonge.Settings;
 import uni.sasjonge.utils.GraphRemovalUndo;
 import uni.sasjonge.utils.OntologyDescriptor;
 
 public abstract class AxiomCreatedBridgesRemoverHeuristic {
 
 	/**
-	 * Removes all edges created by axioms given by the iterator. If the removal will create
-	 * a singleton component (containing only one vertex) the removal will be undone
+	 * Removes all edges created by axioms given by the iterator. If the removal
+	 * will create a singleton component (containing only one vertex) the removal
+	 * will be undone
+	 * 
 	 * @param g
 	 * @param edgeToAxioms
 	 * @param axiomToEdges
@@ -40,7 +43,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 				oldNumOfSingletons++;
 			}
 		}
-		
+
 		// Counter for the singletons after the removal
 		int newNumOfSingletons = 0;
 
@@ -61,9 +64,11 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 			if (oldNumOfSingletons != newNumOfSingletons) {
 				undoer.undo();
 			} else {
-				// Else print the removed axiom
-				for (OWLAxiom ax : undoer.getAxiom()) {
-					System.out.println(OntologyDescriptor.getCleanNameOWLObj(ax));
+				// Else print the removed axiom if the flag is set
+				if (Settings.PRINT_REMOVED_AXIOMS) {
+					for (OWLAxiom ax : undoer.getAxiom()) {
+						System.out.println(OntologyDescriptor.getCleanNameOWLObj(ax));
+					}
 				}
 				removedAxiomEdge = true;
 			}
@@ -73,7 +78,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 
 		return removedAxiomEdge;
 	}
-	
+
 	/**
 	 * Remove edge, and all other edges that came from the same axiom as the edge
 	 * 
@@ -83,11 +88,10 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 	 * @param next
 	 */
 	private GraphRemovalUndo removeAxiomEdgesOf(Graph<String, DefaultEdge> g,
-			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels, 
-			DefaultEdge edge) {
-		
+			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels, DefaultEdge edge) {
+
 		Map<OWLAxiom, Set<DefaultEdge>> axiomToEdges = getAxiomToEdges(createdByAxioms);
-		
+
 		// Instantiate a graphremoval class (which allows to undo the removal9
 		GraphRemovalUndo remover = new GraphRemovalUndo(g);
 
@@ -96,7 +100,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 			// For each edge that was created by this axiom
 			for (DefaultEdge e : axiomToEdges.get(ax)) {
 				// remove the axiom from the label
-				if (labels.containsKey(e) ) {
+				if (labels.containsKey(e)) {
 					labels.get(e).remove(ax);
 				}
 				// If this was the last axiom of the edge, remove it
@@ -109,7 +113,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 			ax.nestedClassExpressions().forEach(nested -> {
 				remover.removeVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
 			});
-			
+
 			// Remember which axioms where removed
 			remover.saveAxiom(ax);
 		}
@@ -117,7 +121,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 		return remover;
 
 	}
-	
+
 	/**
 	 * Given a map of edges to axioms calculates the inverse map of axioms to edges
 	 * 
@@ -133,7 +137,7 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxioms.entrySet()) {
 			// For each axiom of this edge
 			for (OWLAxiom ax : e.getValue()) {
-				// Add the axiom and corresponding edge to the output 
+				// Add the axiom and corresponding edge to the output
 				if (!axiomsToEdges.containsKey(ax)) {
 					axiomsToEdges.put(ax, new HashSet<>());
 				}

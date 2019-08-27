@@ -20,62 +20,14 @@ public class Settings {
 	// The type of the output graph:
 	// 0 = Partition structure graph
 	// 1 = Constraint graph
-	public static final int OUTPUT_GRAPH_TYPE = 0;	
-
-	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
-	// The output path for the graph
-	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
+	public static final int OUTPUT_GRAPH_TYPE = 0;
 	
-	// Should the created partitions exported as owl?
-	public static final boolean EXPORT_ONTOLOGIES = true;
-
+	// For the constraint graph
+	// Should axioms be shown in the labels?
+	public static final boolean SHOW_AXIOMS = true;
+	// If yes, how many?
+	public static final int AXIOM_COUNT = 6;
 	
-	// Handling of RDF labels as names and the used lang 
-	public static final boolean USE_RDF_LABEL = true;
-	public static final String lang = "en";
-	
-	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>
-	public static final String PROPERTY_0_DESIGNATOR = "[0]";
-	public static final String PROPERTY_1_DESIGNATOR = "[1]";
-	
-	// How to handle universal roles
-	// - do we even want to handle them? if false, the tool refuses universal roles
-	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
-	// - if true, we can set a treshold to which point the program 
-	public static final int UNIVERAL_ROLES_TRESHOLD = 8;
-	
-	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static final boolean USE_OLH = false;
-	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int OLH_LAYERS_TO_REMOVE = 1;
-	
-	// ----------- Biconnectivity Heuristic (BH) --------------
-	public static final boolean USE_BH = false;
-	// Max number of axioms of labels to remove
-	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
-	// Number of repetition of this heuristic
-	public static final int BH_NUM_OF_REPETITION_OF_HEURISTIC = 1;
-
-	// -------- Community Detection Heuristic (CD) -----------
-	public static final boolean USE_CD = true;
-	// Flag stating if the louvain or leiden algorithm should be used
-	// true = leiden, false = louvain
-	public static final boolean CD_LEIDEN = true;
-	// Weight of non axiom edges in the network
-	public static int CD_WEIGHT_FOR_NON_AXIOM_EDGES = 3;
-	// Resolution start-valaue and decrease for leiden or louvain algorithm
-	public static double CD_RESOLUTION_AT_START = 1d;
-	public static double CD_RESOLUTION_DECREASE = 0.75d;
-
-	// -------- Upper level remover heuristic(ULH) -----------
-	public static final boolean USE_ULH = false;
-	// File used in the UpperLevelRemover. Should contain upper level ontologies
-	public static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
-	// Treshhold for how many percent of the upper level ontology the given ontology can contain,
-	// before it's removed
-	public static final double ULH_REMOVAL_TRESHHOLD = 1.00;
-
-	// --------------- Graph visualization -------------------
 	// How many individual labels should be shown
 	public static final int NUM_OF_INDIV_LABELS = 3;
 	// Number of properties on a edge
@@ -92,10 +44,64 @@ public class Settings {
 	public static final int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 3;
 	// Max number of classes per group
 	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
+
+
+	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
+	// The output path for the graph
+	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
 	
-	// Should axioms be shown in the labels?
-	public static final boolean SHOW_AXIOMS = true;
-	// If yes, how many?
-	public static final int AXIOM_COUNT = 6;
+	// Should the created partitions exported as owl?
+	public static final boolean EXPORT_ONTOLOGIES = false;
+	
+	// ------- Settings for the default partitioner ----------
+	
+	// Handling of RDF labels as names and the used lang 
+	public static final boolean USE_RDF_LABEL = true;
+	public static final String lang = "en";
+	
+	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>
+	public static final String PROPERTY_0_DESIGNATOR = "[0]";
+	public static final String PROPERTY_1_DESIGNATOR = "[1]";
+	
+	// How to handle universal roles
+	// - do we even want to handle them? if false, the tool refuses universal roles
+	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
+	// - if true, we can set a treshold to which point the program 
+	public static final int UNIVERAL_ROLES_TRESHOLD = 8;
+	
+	// Should the removed axioms be printed?
+	public static final boolean PRINT_REMOVED_AXIOMS = false;
+	
+	// -------------- Settings for heuristics -----------------
+	// -------- Ontology Level Reducer Heuristic (OLH) --------
+	public static final boolean USE_OLH = false;
+	// Number of "layers" to remove in the OntologyLevelReducer
+	public static final int OLH_LAYERS_TO_REMOVE = 1;
+	
+	// ----------- Biconnectivity Heuristic (BH) --------------
+	public static final boolean USE_BH = true;
+	// Max number of axioms of labels to remove
+	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
+	// Number of repetition of this heuristic
+	public static final int BH_NUM_OF_REPETITION_OF_HEURISTIC = 1;
+
+	// -------- Community Detection Heuristic (CD) -----------
+	public static final boolean USE_CD = false;
+	// Flag stating if the louvain or leiden algorithm should be used
+	// true = leiden, false = louvain
+	public static final boolean CD_LEIDEN = true;
+	// Weight of non axiom edges in the network
+	public static int CD_WEIGHT_FOR_NON_AXIOM_EDGES = 3;
+	// Resolution start-valaue and decrease for leiden or louvain algorithm
+	public static double CD_RESOLUTION_AT_START = 1d;
+	public static double CD_RESOLUTION_DECREASE = 0.75d;
+
+	// -------- Upper level remover heuristic(ULH) -----------
+	public static final boolean USE_ULH = false;
+	// File used in the UpperLevelRemover. Should contain upper level ontologies
+	public static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
+	// Treshhold for how many percent of the upper level ontology the given ontology can contain,
+	// before it's removed
+	public static final double ULH_REMOVAL_TRESHHOLD = 0.9d;
 
 }

@@ -153,9 +153,12 @@ public class Partitioner {
 			if (Settings.USE_ULH) {
 				// Instantiate the upper level manager
 				UpperLevelManager ulRemove = new UpperLevelManager(Settings.UPPER_LEVEL_FILE);
+				System.out.println("!!!!!!!!!!! ");
 				// Remove all upper level where more than Settings.ULH_REMOVAL_TRESHHOLD percent
 				// of the upper level ontology is contained
 				for (Entry<String, Double> entry : ulRemove.checkForUpperLevel(loadedOnt).entrySet()) {
+					System.out.println(entry.getValue().doubleValue() + "% of the upper level ontology "
+							+ entry.getKey() + " is in this ontology");
 					if (entry.getValue().doubleValue() >= Settings.ULH_REMOVAL_TRESHHOLD) {
 						ontology = ulRemove.removeUpperLevel(loadedOnt, entry.getKey());
 					}
