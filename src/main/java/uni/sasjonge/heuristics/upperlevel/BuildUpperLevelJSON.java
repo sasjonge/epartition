@@ -33,7 +33,7 @@ public class BuildUpperLevelJSON {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println("saving");
+		System.out.println("saving upper level ontologies into json file");
 		
 		remover.saveToJSONFile();
 	}

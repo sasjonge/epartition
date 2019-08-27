@@ -15,10 +15,10 @@ import org.semanticweb.owlapi.model.OWLAxiom;
 import uni.sasjonge.utils.GraphRemovalUndo;
 import uni.sasjonge.utils.OntologyDescriptor;
 
-public abstract class AxiomLabelledBridgesRemover {
+public abstract class AxiomCreatedBridgesRemoverHeuristic {
 
 	/**
-	 * Removes all axiom labelled edges given by the iterator. If the removal will create
+	 * Removes all edges created by axioms given by the iterator. If the removal will create
 	 * a singleton component (containing only one vertex) the removal will be undone
 	 * @param g
 	 * @param edgeToAxioms

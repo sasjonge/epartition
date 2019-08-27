@@ -19,14 +19,14 @@ import cwts.networkanalysis.LeidenAlgorithm;
 import cwts.networkanalysis.LouvainAlgorithm;
 import cwts.networkanalysis.Network;
 import uni.sasjonge.Settings;
-import uni.sasjonge.heuristics.util.AxiomLabelledBridgesRemover;
+import uni.sasjonge.heuristics.util.AxiomCreatedBridgesRemoverHeuristic;
 
 /**
  * Manages the translation and usage of memory detection algorithms
  * 
  * @author Sascha Jongebloed
  */
-public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
+public class CommunityDetectionManager extends AxiomCreatedBridgesRemoverHeuristic {
 
 	private boolean lazy_clustering = false;
 
@@ -146,7 +146,9 @@ public class CommunityDetectionManager extends AxiomLabelledBridgesRemover {
 			System.out.println("Resolution: " + resolutionForLeiden + "###There are " + bridgeSet.size() + " bridges" + "### There are " + vertexClusters.size() + " Clusters");
 		}
 		// Remove the choosen bridges between the cluster
+		System.out.println("--------------- Remove axioms -----------------------");
 		removeAxiomEdgesOfNoSingleton(graph, createdByAxioms, labels, getBridges().iterator());
+		System.out.println("-----------------------------------------------------");
 		return graph;
 	}
 

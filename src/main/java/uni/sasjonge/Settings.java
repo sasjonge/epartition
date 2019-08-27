@@ -50,9 +50,10 @@ public class Settings {
 	public static final int OLH_LAYERS_TO_REMOVE = 1;
 	
 	// ----------- Biconnectivity Heuristic (BH) --------------
-	// Max number of axioms of labels to remove
 	public static final boolean USE_BH = false;
+	// Max number of axioms of labels to remove
 	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
+	// Number of repetition of this heuristic
 	public static final int BH_NUM_OF_REPETITION_OF_HEURISTIC = 1;
 
 	// -------- Community Detection Heuristic (CD) -----------

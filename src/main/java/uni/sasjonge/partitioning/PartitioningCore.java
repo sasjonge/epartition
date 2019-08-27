@@ -219,10 +219,11 @@ public class PartitioningCore {
 			CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
 			g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
 		}
-		
+
 		// ******************* Remove labels of removed edges *************
 		if (Settings.USE_CD || Settings.USE_BH) {
-			edgeToAxioms = edgeToAxioms.entrySet().stream().filter(t -> g.containsEdge(t.getKey())).collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+			edgeToAxioms = edgeToAxioms.entrySet().stream().filter(t -> g.containsEdge(t.getKey()))
+					.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
 		}
 		System.out.println("EdgeToAxiom has null key? " + edgeToAxioms.containsKey(null));
 
@@ -719,18 +720,24 @@ public class PartitioningCore {
 					if (subjectAsEntity.isOWLObjectProperty() || subjectAsEntity.isOWLDataProperty()) {
 						edgeReference.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)
 								+ Settings.PROPERTY_0_DESIGNATOR));
+						if (edgeReference.get() == null) {
+							System.err.println("Edgerefernce is null");
+						}
 					} else if (subjectAsEntity.isOWLClass() || subjectAsEntity.isOWLNamedIndividual()) {
 						if (g.containsVertex(OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity))) {
 							edgeReference
 									.set(createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subjectAsEntity)));
-						}
+						} 
 					} else {
 						System.err.println("Missing annotation subject: " + subjectAsEntity.toString());
 					}
+					
 					// Also save all all SubAnnotationPropertyOf, AnnotationPropertyRangeOf
 					// and AnnotationPropertyDomainOf axioms containing the used
 					// annotation property
-					if (annotToAxioms.containsKey(annot.getProperty())) {
+					// If the edgeReference is null, then the property belongs to a heuristic-removed
+					// entity
+					if (edgeReference.get() != null && annotToAxioms.containsKey(annot.getProperty())) {
 						for (OWLAxiom annoAx : annotToAxioms.get(annot.getProperty())) {
 							if (!edgeToAxioms.containsKey(edgeReference.get())) {
 								edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
@@ -1022,7 +1029,6 @@ public class PartitioningCore {
 	private List<OWLOntology> createOntologyFromCC(List<Set<String>> cc, OWLOntology parentOntology) {
 		// The list of ontologies to return
 		List<OWLOntology> toReturn = new ArrayList<>();
-		
 
 		if (cc.size() > 1) {
 			// Get a map of cc's to set of their axioms
@@ -1047,7 +1053,7 @@ public class PartitioningCore {
 					OWLOntology ont = null;
 					if (parentIRIString == null) {
 						ont = manager.createOntology(axs);
-						
+
 					} else {
 						ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".ow"));
 					}
@@ -1082,22 +1088,17 @@ public class PartitioningCore {
 
 		// Get a map from all vertices to the String representing the CC
 		Map<String, String> vertexToCCString = getVertexToCCString(connectedSets);
-		
+
 		// For all Entries that Map a edge to a set of axioms
 		for (Entry<DefaultEdge, Set<OWLAxiom>> e : edgeToAxiom.entrySet()) {
 			// Get the name of the CC
 			String ccName = vertexToCCString.get(edgeToVertex.get(e.getKey()));
-			if (ccName == null) {
-				System.out.println("!!!!" + e.getKey());
-			}
 			// And save all axioms of the edge to it
 			if (!ccToAxioms.containsKey(ccName)) {
 				ccToAxioms.put(ccName, new HashSet<>());
 			}
 			ccToAxioms.get(ccName).addAll(e.getValue());
 		}
-		
-		System.out.println(ccToAxioms.toString());
 
 		return ccToAxioms;
 	}

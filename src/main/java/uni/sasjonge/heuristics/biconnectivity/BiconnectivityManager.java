@@ -21,11 +21,11 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.parameters.OntologyCopy;
 
 import uni.sasjonge.Settings;
-import uni.sasjonge.heuristics.util.AxiomLabelledBridgesRemover;
+import uni.sasjonge.heuristics.util.AxiomCreatedBridgesRemoverHeuristic;
 import uni.sasjonge.utils.GraphRemovalUndo;
 import uni.sasjonge.utils.OntologyDescriptor;
 
-public class BiconnectivityManager extends AxiomLabelledBridgesRemover {
+public class BiconnectivityManager extends AxiomCreatedBridgesRemoverHeuristic {
 
 	/**
 	 * Removes all bridges according to the biconnectivtyinspector of jgrapht. The
@@ -48,21 +48,22 @@ public class BiconnectivityManager extends AxiomLabelledBridgesRemover {
 			// Remove the bridges that weren't created by axioms
 			bridgesOfThisStep.removeIf(p -> !createdByAxioms.containsKey(p));
 
-			// Save the new size
-			// Remove all label with more than X number of axiom labels
+			// Remove all edges with more than X number of axioms that created them (if possible
+			// we want to remove only edges with X labels, to reduce the overall
+			// removal of axioms)
 			List<DefaultEdge> bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
-					.filter(p -> (labels.get(p).size() < Settings.BH_NUM_OF_AXIOM_LABELS))
+					.filter(p -> (createdByAxioms.get(p).size() < Settings.BH_NUM_OF_AXIOM_LABELS))
 					.collect(Collectors.toList());
-			// Make sure, that at least some labels survive the filter
+			// Make sure, that at least some edges survive the filter
 			int num_of_axiom_labels = Settings.BH_NUM_OF_AXIOM_LABELS;
 			while (bridgesOfThisStepFiltered.isEmpty()) {
 				num_of_axiom_labels++;
 				final int filterNum = num_of_axiom_labels;
 				bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
-						.filter(p -> (labels.get(p).size() < filterNum)).collect(Collectors.toList());
+						.filter(p -> (createdByAxioms.get(p).size() < filterNum)).collect(Collectors.toList());
 			}
 
-			// Remove it and all edges that where only created by the same edges
+			// Remove it and all edges that where only created by the same axioms
 			this.removeAxiomEdgesOfNoSingleton(g, createdByAxioms, labels, bridgesOfThisStepFiltered.iterator());
 
 			System.out.println("---------------------------------------------------");
