@@ -51,7 +51,7 @@ public class Settings {
 	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
 	
 	// Should the created partitions exported as owl?
-	public static final boolean EXPORT_ONTOLOGIES = false;
+	public static boolean EXPORT_ONTOLOGIES = false;
 	
 	// ------- Settings for the default partitioner ----------
 	
@@ -74,19 +74,19 @@ public class Settings {
 	
 	// -------------- Settings for heuristics -----------------
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static final boolean USE_OLH = false;
+	public static boolean USE_OLH = false;
 	// Number of "layers" to remove in the OntologyLevelReducer
 	public static final int OLH_LAYERS_TO_REMOVE = 1;
 	
 	// ----------- Biconnectivity Heuristic (BH) --------------
-	public static final boolean USE_BH = true;
+	public static boolean USE_BH = true;
 	// Max number of axioms of labels to remove
 	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
 	// Number of repetition of this heuristic
 	public static final int BH_NUM_OF_REPETITION_OF_HEURISTIC = 1;
 
 	// -------- Community Detection Heuristic (CD) -----------
-	public static final boolean USE_CD = false;
+	public static boolean USE_CD = false;
 	// Flag stating if the louvain or leiden algorithm should be used
 	// true = leiden, false = louvain
 	public static final boolean CD_LEIDEN = true;
@@ -97,7 +97,7 @@ public class Settings {
 	public static double CD_RESOLUTION_DECREASE = 0.75d;
 
 	// -------- Upper level remover heuristic(ULH) -----------
-	public static final boolean USE_ULH = false;
+	public static boolean USE_ULH = false;
 	// File used in the UpperLevelRemover. Should contain upper level ontologies
 	public static final String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
 	// Treshhold for how many percent of the upper level ontology the given ontology can contain,
