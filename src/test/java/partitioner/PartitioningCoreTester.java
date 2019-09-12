@@ -31,7 +31,7 @@ import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import uni.sasjonge.Settings;
 import uni.sasjonge.partitioning.PartitioningCore;
 
-public class ExampleTest {
+public class PartitioningCoreTester {
 	
 	static OWLOntologyManager manager;
 	
@@ -56,7 +56,7 @@ public class ExampleTest {
 	
 	@Test
 	@DisplayName("Run-through-example")
-	public void test() throws IOException, ExportException {
+	public void runThroughExampleTest() throws IOException, ExportException {
 		deactivateHeuristics();
 		
 		OWLClass a = factory.getOWLClass(base + "A");
