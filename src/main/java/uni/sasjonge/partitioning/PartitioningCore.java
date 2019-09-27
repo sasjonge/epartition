@@ -25,6 +25,7 @@ import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.AxiomType;
 import org.semanticweb.owlapi.model.ClassExpressionType;
 import org.semanticweb.owlapi.model.HasAxiomsByType;
 import org.semanticweb.owlapi.model.IRI;
@@ -110,11 +111,11 @@ import uni.sasjonge.utils.OntologyDescriptor;
  * 
  * @author Sascha Jongebloed
  *
- */
+ */ 
 public class PartitioningCore {
 
 	public Graph<String, DefaultEdge> g = new DefaultUndirectedGraph<>(DefaultEdge.class);
-	// Labelling of edges by axioms
+	// Labelling of edges by axioms 
 	public Map<DefaultEdge, Set<OWLAxiom>> edgeToAxioms = new HashMap<>();
 	// Save one of the edges of a given edge to have an easier way of recall
 	// We only save edges that are labelled with axioms
@@ -137,7 +138,7 @@ public class PartitioningCore {
 	public List<OWLOntology> partition(OWLOntology ontology) throws IOException, ExportException {
 
 		// The partitions
-		List<OWLOntology> toReturn = new ArrayList<>();
+		List<OWLOntology> toReturn = new ArrayList<>(); 
 
 		long addVertexStartTime = System.nanoTime();
 
@@ -147,7 +148,7 @@ public class PartitioningCore {
 			if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
 				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_0_DESIGNATOR);
 				g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_1_DESIGNATOR);
-			}
+			} 
 		});
 
 		// Vertex: DataProperties
@@ -170,6 +171,20 @@ public class PartitioningCore {
 		// Vertex: SubConcepts
 		ontology.logicalAxioms().forEach(a -> {
 			a.nestedClassExpressions().forEach(nested -> {
+				if (!nested.isOWLThing()) {
+					g.addVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
+				}
+			});
+			
+		});
+		
+		// Also add the vertices for the equivalentclasses part
+		// of disjoint union
+		// TODO: Is this the right way to get the ObjectUnionOf of the
+		// Disjoint Union Axioms?
+		ontology.axioms(AxiomType.DISJOINT_UNION).forEach(ax -> {
+			OWLEquivalentClassesAxiom eax = ax.getOWLEquivalentClassesAxiom();
+			eax.nestedClassExpressions().forEach(nested -> {
 				if (!nested.isOWLThing()) {
 					g.addVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
 				}
@@ -441,7 +456,11 @@ public class PartitioningCore {
 			duax.getOWLEquivalentClassesAxiom().classExpressions().forEach(cexp -> {
 				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
 			});
+			duax.getOWLDisjointClassesAxiom().classExpressions().forEach(cexp -> {
+				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+			});
 
+			System.out.println("Vertlist is " + vertexList2);
 			// Connect this classes
 			connect_vertexes_stepwise_labelled(vertexList2, ax);
 			break;
@@ -551,7 +570,6 @@ public class PartitioningCore {
 		case "FunctionalObjectProperty":
 		case "InverseFunctionalObjectProperty":
 			// In this case we only need to label a vertex with this axiom
-			// TODO: REPAIR
 			labelledEdge = createLoopEdge(g,
 					getPropertyVertex(((OWLObjectPropertyCharacteristicAxiom) ax).getProperty(), 0));
 			break;
@@ -696,7 +714,7 @@ public class PartitioningCore {
 			if (!edgeToAxioms.containsKey(labelledEdge)) {
 				edgeToAxioms.put(labelledEdge, new HashSet<OWLAxiom>());
 			}
-			edgeToAxioms.get(labelledEdge).add(ax);
+			edgeToAxioms.get(labelledEdge).add(ax); 
 
 			// Save it creating axiom
 			if (!createdByAxioms.containsKey(labelledEdge)) {

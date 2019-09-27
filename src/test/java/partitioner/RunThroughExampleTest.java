@@ -31,40 +31,18 @@ import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import uni.sasjonge.Settings;
 import uni.sasjonge.partitioning.PartitioningCore;
 
-public class PartitioningCoreTester {
-	
-	static OWLOntologyManager manager;
-	
-	static OWLDataFactory factory;	
-	
-	OWLOntology ontology;
-	
-	String base = "http://org.epartition.exampletest";
+public class RunThroughExampleTest extends PartitioningTest{
 
-	@BeforeAll
-	static void initAll() {
-		// Create a owl manager
-		manager = OWLManager.createOWLOntologyManager();
-		Settings.EXPORT_ONTOLOGIES = true;
-	}
-	
-	@BeforeEach
-	void init() throws OWLOntologyCreationException {
-		factory = manager.getOWLDataFactory();
-		ontology = manager.createOntology();
-	}
-	
 	@Test
 	@DisplayName("Run-through-example")
 	public void runThroughExampleTest() throws IOException, ExportException {
-		deactivateHeuristics();
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
 		OWLClass c = factory.getOWLClass(base + "C");
 		OWLClass bDash = factory.getOWLClass(base + "B'");
 		OWLClass bDashDash = factory.getOWLClass(base + "B''");
-		
+		 
 		OWLObjectProperty r = factory.getOWLObjectProperty(base + "r");
 		OWLObjectProperty s = factory.getOWLObjectProperty(base + "s");
 		
@@ -100,12 +78,4 @@ public class PartitioningCoreTester {
 			}
 		}
 	}
-	
-	public void deactivateHeuristics() {
-		Settings.USE_BH = false;
-		Settings.USE_CD = false;
-		Settings.USE_OLH = false;
-		Settings.USE_ULH = false;
-	}
-
 }
