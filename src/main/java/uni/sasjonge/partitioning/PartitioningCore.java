@@ -57,6 +57,7 @@ import org.semanticweb.owlapi.model.OWLEquivalentDataPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLFunctionalDataPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLFunctionalObjectPropertyAxiom;
+import org.semanticweb.owlapi.model.OWLHasKeyAxiom;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLLiteral;
@@ -610,7 +611,7 @@ public class PartitioningCore {
 			OWLNaryPropertyAxiom<OWLDataPropertyExpression> naryDataPropAx = (OWLNaryPropertyAxiom<OWLDataPropertyExpression>) ax;
 			// Collect all properties
 			List<String> naryDataPropAxNames = naryDataPropAx.properties()
-					.map(e -> OntologyDescriptor.getCleanNameOWLObj(e)).collect(Collectors.toList());
+					.map(e -> OntologyDescriptor.getCleanNameOWLObj(e)+ Settings.PROPERTY_0_DESIGNATOR).collect(Collectors.toList());
 
 			// Connect all properties
 			connect_vertexes_stepwise_labelled(naryDataPropAxNames, ax);
@@ -640,13 +641,41 @@ public class PartitioningCore {
 
 		case "FunctionalDataProperty":
 			OWLFunctionalDataPropertyAxiom funcDataPropAx = (OWLFunctionalDataPropertyAxiom) ax;
-
+			System.out.println(funcDataPropAx.getProperty().toString());
 			// Similarly to FunctionalObjectProperty: We only need to add the axiom to a
 			// label
 			labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(funcDataPropAx.getProperty())
 					+ Settings.PROPERTY_0_DESIGNATOR);
 			break;
 
+		// ---------------------- Key -------------------------
+		case "HasKey":
+			OWLHasKeyAxiom hKeyAx = (OWLHasKeyAxiom) ax;
+			
+			OWLClassExpression cExp = hKeyAx.getClassExpression();
+			String cExpString = OntologyDescriptor.getCleanNameOWLObj(cExp);
+			
+			AtomicReference<DefaultEdge> eA = new AtomicReference<>();
+						
+			hKeyAx.objectPropertyExpressions().forEach(oProp -> {
+				DefaultEdge oEdge = addEdgeHelp(g, cExpString, OntologyDescriptor.getCleanNameOWLObj(oProp)+ Settings.PROPERTY_0_DESIGNATOR);
+				if (eA.get() == null) {
+					eA.set(oEdge);
+				}
+			});
+			
+			hKeyAx.dataPropertyExpressions().forEach(dProp -> {
+				DefaultEdge pEdge = addEdgeHelp(g, cExpString, OntologyDescriptor.getCleanNameOWLObj(dProp)+ Settings.PROPERTY_0_DESIGNATOR);
+				if (eA.get() == null) {
+					eA.set(pEdge);
+				}
+			});
+			
+			labelledEdge = eA.get();
+			
+			break;
+			
+			
 		// ------------------- Assertions ---------------------
 
 		case "SameIndividual":
