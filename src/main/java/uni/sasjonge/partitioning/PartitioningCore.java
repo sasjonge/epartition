@@ -426,10 +426,12 @@ public class PartitioningCore {
 
 		case "SubClassOf":
 			OWLSubClassOfAxiom subCOf = (OWLSubClassOfAxiom) ax;
-			if (!subCOf.getSuperClass().isOWLThing()) {
+			if (!subCOf.getSuperClass().isOWLThing() && !subCOf.getSubClass().isOWLThing()) {
 				// Add an edge between the sub- and super class
 				labelledEdge = addEdgeHelp(g, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass()),
 						OntologyDescriptor.getCleanNameOWLObj(subCOf.getSuperClass()));
+			} else if (!subCOf.getSuperClass().isOWLThing()) {
+				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSuperClass()));
 			} else {
 				labelledEdge = createLoopEdge(g, OntologyDescriptor.getCleanNameOWLObj(subCOf.getSubClass()));
 			}
@@ -442,28 +444,44 @@ public class PartitioningCore {
 			// collect all class expressions in this axiom
 			List<String> vertexList = new ArrayList<>();
 			naryaxiom.operands().forEach(cexp -> {
-				vertexList.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				if (!cexp.isOWLThing( )) {
+					vertexList.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				}
 			});
 			// Add edges between all equivalent classes
+			if (vertexList.size() != 1) {
 			connect_vertexes_stepwise_labelled(vertexList, ax);
+			} else {
+				labelledEdge = createLoopEdge(g, vertexList.iterator().next());
+			}
 			break;
 
 		case "DisjointUnion":
 			OWLDisjointUnionAxiom duax = (OWLDisjointUnionAxiom) ax;
 			List<String> vertexList2 = new ArrayList<>();
 			// Add the class which is equivalent to the disjoint union
-			vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(duax.getOWLClass()));
+			if (!duax.getOWLClass().isOWLThing()) {
+				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(duax.getOWLClass()));
+			}
 			// Collect all equivalent classes
 			duax.getOWLEquivalentClassesAxiom().classExpressions().forEach(cexp -> {
-				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				if (!cexp.isOWLThing()) {
+					vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				}
 			});
 			duax.getOWLDisjointClassesAxiom().classExpressions().forEach(cexp -> {
-				vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				if (!cexp.isOWLThing()) {
+					vertexList2.add(OntologyDescriptor.getCleanNameOWLObj(cexp));
+				}
 			});
 
-			System.out.println("Vertlist is " + vertexList2);
 			// Connect this classes
+			// Add edges between all equivalent classes
+			if (vertexList2.size() != 1) {
 			connect_vertexes_stepwise_labelled(vertexList2, ax);
+			} else {
+				labelledEdge = createLoopEdge(g, vertexList2.iterator().next());
+			}
 			break;
 
 		// ----------------- Object Property Axioms -------------------
