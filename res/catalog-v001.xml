@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
-    <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
-        <uri id="Automatically generated entry, Timestamp=1533130445574" name="duplicate:http://protege.stanford.edu/plugins/owl/owl-library/koala.owl" uri="koala_small.owl"/>
-        <uri id="Automatically generated entry, Timestamp=1533130445574" name="duplicate:http://protege.stanford.edu/plugins/owl/owl-library/koala.owl" uri="koala.owl"/>
-        <uri id="Automatically generated entry, Timestamp=1533130445574" name="http://www.semanticweb.org/sascha/ontologies/2018/7/untitled-ontology-124" uri="partitioner_test.owl"/>
-    </group>
-</catalog>
