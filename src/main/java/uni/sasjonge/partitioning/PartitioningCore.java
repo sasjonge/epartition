@@ -124,6 +124,9 @@ public class PartitioningCore {
 	// Map of Axioms to the edges it created
 	public Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms = new HashMap<>();
 	Map<OWLAnnotationProperty, Set<OWLAxiom>> annotToAxioms;
+	
+	// Counter for the special case in the addition of haskey axioms with owlthing as subject
+	int counter = 0;
 
 	/**
 	 * E-part Algorithm: Partitions the given ontology in several smaller ontologies
@@ -324,8 +327,11 @@ public class PartitioningCore {
 		// ObjectComplementOf
 		case OBJECT_COMPLEMENT_OF:
 			// Edge between expr and it's complement
-			g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr),
-					OntologyDescriptor.getCleanNameOWLObj(((OWLObjectComplementOf) expr).getOperand()));
+			OWLClassExpression op = ((OWLObjectComplementOf) expr).getOperand();
+			if (!op.isOWLThing()) {
+				g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr),
+					OntologyDescriptor.getCleanNameOWLObj(op));
+			}
 			break;
 
 		// 2ary logical operators
@@ -669,9 +675,14 @@ public class PartitioningCore {
 		// ---------------------- Key -------------------------
 		case "HasKey":
 			OWLHasKeyAxiom hKeyAx = (OWLHasKeyAxiom) ax;
-			
+		
 			OWLClassExpression cExp = hKeyAx.getClassExpression();
-			String cExpString = OntologyDescriptor.getCleanNameOWLObj(cExp);
+			String cExpString = cExp.isOWLThing() ? "topRepresentant#" + counter : OntologyDescriptor.getCleanNameOWLObj(cExp);
+			
+			// Special case if cExp is OWL Thing/Top: Add a new node representing top
+			if (cExp.isOWLThing()) {
+				g.addVertex("topRepresentant#" + counter++);
+			}
 			
 			AtomicReference<DefaultEdge> eA = new AtomicReference<>();
 						
