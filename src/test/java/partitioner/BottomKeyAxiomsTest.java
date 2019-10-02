@@ -19,10 +19,10 @@ import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 
 import uni.sasjonge.partitioning.PartitioningCore;
 
-class TopKeyAxiomsTest extends PartitioningTest {
+class BottomKeyAxiomsTest extends PartitioningTest {
 	
 	@Test
-	void keyWithTopTest() throws IOException, ExportException {
+	void keyWithBottomTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -34,7 +34,7 @@ class TopKeyAxiomsTest extends PartitioningTest {
 		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, b);
 		OWLSubObjectPropertyOfAxiom beta = factory.getOWLSubObjectPropertyOfAxiom(r, s);
 		OWLSubDataPropertyOfAxiom gamma = factory.getOWLSubDataPropertyOfAxiom(p, pDash);
-		OWLHasKeyAxiom delta = factory.getOWLHasKeyAxiom(factory.getOWLThing(), r, p);
+		OWLHasKeyAxiom delta = factory.getOWLHasKeyAxiom(factory.getOWLNothing(), r, p);
 		
 		ontology.add(alpha, beta, gamma, delta);
 		

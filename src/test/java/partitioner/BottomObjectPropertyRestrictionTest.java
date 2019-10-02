@@ -21,10 +21,10 @@ import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 
 import uni.sasjonge.partitioning.PartitioningCore;
 
-class TopObjectPropertyRestrictionTest extends PartitioningTest {
+class BottomObjectPropertyRestrictionTest extends PartitioningTest {
     
     @Test
-    void  objectSomeValuesFromWithTopTest() throws IOException, ExportException {
+    void  objectSomeValuesFromWithBottomTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -38,7 +38,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
 		OWLObjectPropertyDomainAxiom beta = factory.getOWLObjectPropertyDomainAxiom(r, aDashDash);
 		OWLInverseObjectPropertiesAxiom gamma = factory.getOWLInverseObjectPropertiesAxiom(rDash, r);
 		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(b, bDash);
-		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectSomeValuesFrom(r, factory.getOWLThing()));
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectSomeValuesFrom(r, factory.getOWLNothing()));
 
         ontology.add(alpha, beta, gamma, delta, epsilon);
         
@@ -50,7 +50,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectAllValuesFromWithTopTest() throws IOException, ExportException {
+    void  objectAllValuesFromWithBottomTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -64,7 +64,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
 		OWLObjectPropertyDomainAxiom beta = factory.getOWLObjectPropertyDomainAxiom(r, aDashDash);
 		OWLInverseObjectPropertiesAxiom gamma = factory.getOWLInverseObjectPropertiesAxiom(rDash, r);
 		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(b, bDash);
-		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectAllValuesFrom(r, factory.getOWLThing()));
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectAllValuesFrom(r, factory.getOWLNothing()));
 
         ontology.add(alpha, beta, gamma, delta, epsilon);
         
@@ -76,7 +76,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectMinCardinalityTest() throws IOException, ExportException {
+    void  objectMinCardinalityWithBottomTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -90,7 +90,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
 		OWLObjectPropertyDomainAxiom beta = factory.getOWLObjectPropertyDomainAxiom(r, aDashDash);
 		OWLInverseObjectPropertiesAxiom gamma = factory.getOWLInverseObjectPropertiesAxiom(rDash, r);
 		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(b, bDash);
-		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectMinCardinality(1, r, factory.getOWLThing()));
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectMinCardinality(1, r, factory.getOWLNothing()));
 
         ontology.add(alpha, beta, gamma, delta, epsilon);
         
@@ -103,7 +103,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectMaxCardinalityTest() throws IOException, ExportException {
+    void  objectMaxCardinalityWithBottomTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -117,7 +117,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
 		OWLObjectPropertyDomainAxiom beta = factory.getOWLObjectPropertyDomainAxiom(r, aDashDash);
 		OWLInverseObjectPropertiesAxiom gamma = factory.getOWLInverseObjectPropertiesAxiom(rDash, r);
 		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(b, bDash);
-		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectMaxCardinality(1, r, factory.getOWLThing()));
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectMaxCardinality(1, r, factory.getOWLNothing()));
 
         ontology.add(alpha, beta, gamma, delta, epsilon);
         
@@ -129,7 +129,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectExactCardinalityTest() throws IOException, ExportException {
+    void  objectExactCardinalityWithBottomTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -143,7 +143,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
 		OWLObjectPropertyDomainAxiom beta = factory.getOWLObjectPropertyDomainAxiom(r, aDashDash);
 		OWLInverseObjectPropertiesAxiom gamma = factory.getOWLInverseObjectPropertiesAxiom(rDash, r);
 		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(b, bDash);
-		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectExactCardinality(1, r, factory.getOWLThing()));
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(a, factory.getOWLObjectExactCardinality(1, r, factory.getOWLNothing()));
 
         ontology.add(alpha, beta, gamma, delta, epsilon);
         
