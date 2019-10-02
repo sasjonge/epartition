@@ -229,9 +229,7 @@ class TopClassExpressionAxiomsTest extends PartitioningTest {
 		ontology.add(alpha, beta, gamma, delta); 
 		
 		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
-		
-		System.out.println(partitions.toString());
-		
+
 		assertEquals(2, partitions.size());
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));
@@ -271,9 +269,7 @@ class TopClassExpressionAxiomsTest extends PartitioningTest {
 		ontology.add(alpha, beta, gamma, delta); 
 		
 		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
-		
-		System.out.println(partitions.toString());
-		
+
 		assertEquals(2, partitions.size());
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));

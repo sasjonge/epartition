@@ -156,8 +156,6 @@ class ClassExpressionAxiomsTest extends PartitioningTest {
 		
 		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
 		
-		System.out.println(partitions.toString());
-		
 		assertEquals(1, partitions.size());
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));

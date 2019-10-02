@@ -401,8 +401,6 @@ class ObjectPropertyRestrictionTest extends PartitioningTest {
         areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta,epsilon));
         
 		for (OWLOntology part : partitions) {
-			System.out.println(part.toString());
-
 			switch (part.getLogicalAxiomCount()) {
 			case 3:
 				assertTrue(part.containsAxiom(alpha));
