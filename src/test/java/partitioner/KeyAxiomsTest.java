@@ -67,4 +67,76 @@ class KeyAxiomsTest extends PartitioningTest {
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));
 	}
+
+	@Test
+	void keyManyPreTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLObjectProperty r = factory.getOWLObjectProperty(base + "r");
+		OWLObjectProperty rDash = factory.getOWLObjectProperty(base + "r'");
+		OWLObjectProperty s = factory.getOWLObjectProperty(base + "s");
+		OWLObjectProperty sDash = factory.getOWLObjectProperty(base + "s'");
+		OWLObjectProperty t = factory.getOWLObjectProperty(base + "t");
+		OWLObjectProperty tDash = factory.getOWLObjectProperty(base + "t'");
+		OWLDataProperty p = factory.getOWLDataProperty(base + "P");
+		OWLDataProperty pDash = factory.getOWLDataProperty(base + "P'");
+		OWLDataProperty pTwo = factory.getOWLDataProperty(base + "P2");
+		OWLDataProperty pTwoDash = factory.getOWLDataProperty(base + "P2'");
+		OWLDataProperty pThree = factory.getOWLDataProperty(base + "P3");
+		OWLDataProperty pThreeDash = factory.getOWLDataProperty(base + "P3'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, b);
+		OWLSubObjectPropertyOfAxiom beta = factory.getOWLSubObjectPropertyOfAxiom(r, rDash);
+		OWLSubObjectPropertyOfAxiom gamma = factory.getOWLSubObjectPropertyOfAxiom(s, sDash);
+		OWLSubObjectPropertyOfAxiom delta = factory.getOWLSubObjectPropertyOfAxiom(t, tDash);
+		OWLSubDataPropertyOfAxiom epsilon = factory.getOWLSubDataPropertyOfAxiom(p, pDash);
+		OWLSubDataPropertyOfAxiom zeta = factory.getOWLSubDataPropertyOfAxiom(pTwo, pTwoDash);
+		OWLSubDataPropertyOfAxiom eta = factory.getOWLSubDataPropertyOfAxiom(pThree, pThreeDash);
+
+		ontology.add(alpha, beta, gamma, delta, epsilon, zeta, eta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(7, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta, epsilon, zeta, eta));
+	}
+
+	@Test
+	void keyManyTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLObjectProperty r = factory.getOWLObjectProperty(base + "r");
+		OWLObjectProperty rDash = factory.getOWLObjectProperty(base + "r'");
+		OWLObjectProperty s = factory.getOWLObjectProperty(base + "s");
+		OWLObjectProperty sDash = factory.getOWLObjectProperty(base + "s'");
+		OWLObjectProperty t = factory.getOWLObjectProperty(base + "t");
+		OWLObjectProperty tDash = factory.getOWLObjectProperty(base + "t'");
+		OWLDataProperty p = factory.getOWLDataProperty(base + "P");
+		OWLDataProperty pDash = factory.getOWLDataProperty(base + "P'");
+		OWLDataProperty pTwo = factory.getOWLDataProperty(base + "P2");
+		OWLDataProperty pTwoDash = factory.getOWLDataProperty(base + "P2'");
+		OWLDataProperty pThree = factory.getOWLDataProperty(base + "P3");
+		OWLDataProperty pThreeDash = factory.getOWLDataProperty(base + "P3'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, b);
+		OWLSubObjectPropertyOfAxiom beta = factory.getOWLSubObjectPropertyOfAxiom(r, rDash);
+		OWLSubObjectPropertyOfAxiom gamma = factory.getOWLSubObjectPropertyOfAxiom(s, sDash);
+		OWLSubObjectPropertyOfAxiom delta = factory.getOWLSubObjectPropertyOfAxiom(t, tDash);
+		OWLSubDataPropertyOfAxiom epsilon = factory.getOWLSubDataPropertyOfAxiom(p, pDash);
+		OWLSubDataPropertyOfAxiom zeta = factory.getOWLSubDataPropertyOfAxiom(pTwo, pTwoDash);
+		OWLSubDataPropertyOfAxiom eta = factory.getOWLSubDataPropertyOfAxiom(pThree, pThreeDash);
+
+		OWLHasKeyAxiom theta = factory.getOWLHasKeyAxiom(a, Arrays.asList(r,s,t,p, pTwo, pThree));
+
+		ontology.add(alpha, beta, gamma, delta, epsilon, zeta, eta, theta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta, epsilon, zeta, eta, theta));
+	}
 }

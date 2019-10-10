@@ -34,7 +34,6 @@ import uni.sasjonge.partitioning.PartitioningCore;
 public class RunThroughExampleTest extends PartitioningTest{
 
 	@Test
-	@DisplayName("Run-through-example")
 	public void runThroughExampleTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");

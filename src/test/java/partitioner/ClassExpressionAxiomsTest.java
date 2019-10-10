@@ -160,4 +160,126 @@ class ClassExpressionAxiomsTest extends PartitioningTest {
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));
 	}
+
+	@Test
+	void equivalentClassesManyPreTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLClass c = factory.getOWLClass(base + "C");
+		OWLClass d = factory.getOWLClass(base + "D");
+		OWLClass e = factory.getOWLClass(base + "E");
+		OWLClass aDash = factory.getOWLClass(base + "A'");
+		OWLClass bDash = factory.getOWLClass(base + "B'");
+		OWLClass cDash = factory.getOWLClass(base + "C'");
+		OWLClass dDash = factory.getOWLClass(base + "D'");
+		OWLClass eDash = factory.getOWLClass(base + "E'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, aDash);
+		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(b, bDash);
+		OWLSubClassOfAxiom gamma = factory.getOWLSubClassOfAxiom(c, cDash);
+		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(d, dDash);
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(e, eDash);
+
+		ontology.add(alpha, beta,gamma, delta, epsilon);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(5,partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta, gamma, delta, epsilon));
+	}
+
+	@Test
+	void equivalentClassesManyTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLClass c = factory.getOWLClass(base + "C");
+		OWLClass d = factory.getOWLClass(base + "D");
+		OWLClass e = factory.getOWLClass(base + "E");
+		OWLClass aDash = factory.getOWLClass(base + "A'");
+		OWLClass bDash = factory.getOWLClass(base + "B'");
+		OWLClass cDash = factory.getOWLClass(base + "C'");
+		OWLClass dDash = factory.getOWLClass(base + "D'");
+		OWLClass eDash = factory.getOWLClass(base + "E'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, aDash);
+		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(b, bDash);
+		OWLSubClassOfAxiom gamma = factory.getOWLSubClassOfAxiom(c, cDash);
+		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(d, dDash);
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(e, eDash);
+
+		OWLEquivalentClassesAxiom zeta = factory.getOWLEquivalentClassesAxiom(a, b, c, d, e);
+
+		ontology.add(alpha, beta,gamma, delta, epsilon, zeta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1,partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta, gamma, delta, epsilon, zeta));
+	}
+
+	@Test
+	void disjointClassesManyTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLClass c = factory.getOWLClass(base + "C");
+		OWLClass d = factory.getOWLClass(base + "D");
+		OWLClass e = factory.getOWLClass(base + "E");
+		OWLClass aDash = factory.getOWLClass(base + "A'");
+		OWLClass bDash = factory.getOWLClass(base + "B'");
+		OWLClass cDash = factory.getOWLClass(base + "C'");
+		OWLClass dDash = factory.getOWLClass(base + "D'");
+		OWLClass eDash = factory.getOWLClass(base + "E'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, aDash);
+		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(b, bDash);
+		OWLSubClassOfAxiom gamma = factory.getOWLSubClassOfAxiom(c, cDash);
+		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(d, dDash);
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(e, eDash);
+
+		OWLDisjointClassesAxiom zeta = factory.getOWLDisjointClassesAxiom(a, b, c, d, e);
+
+		ontology.add(alpha, beta,gamma, delta, epsilon, zeta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1,partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta, gamma, delta, epsilon, zeta));
+	}
+
+	@Test
+	void disjointUnionManyTest() throws IOException, ExportException {
+
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLClass c = factory.getOWLClass(base + "C");
+		OWLClass d = factory.getOWLClass(base + "D");
+		OWLClass e = factory.getOWLClass(base + "E");
+		OWLClass aDash = factory.getOWLClass(base + "A'");
+		OWLClass bDash = factory.getOWLClass(base + "B'");
+		OWLClass cDash = factory.getOWLClass(base + "C'");
+		OWLClass dDash = factory.getOWLClass(base + "D'");
+		OWLClass eDash = factory.getOWLClass(base + "E'");
+
+		OWLSubClassOfAxiom alpha = factory.getOWLSubClassOfAxiom(a, aDash);
+		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(b, bDash);
+		OWLSubClassOfAxiom gamma = factory.getOWLSubClassOfAxiom(c, cDash);
+		OWLSubClassOfAxiom delta = factory.getOWLSubClassOfAxiom(d, dDash);
+		OWLSubClassOfAxiom epsilon = factory.getOWLSubClassOfAxiom(e, eDash);
+
+		OWLDisjointUnionAxiom zeta = factory.getOWLDisjointUnionAxiom(a, Arrays.asList(b, c, d, e));
+
+		ontology.add(alpha, beta,gamma, delta, epsilon, zeta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1,partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta, gamma, delta, epsilon, zeta));
+	}
 }

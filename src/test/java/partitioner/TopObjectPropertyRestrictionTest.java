@@ -76,7 +76,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectMinCardinalityTest() throws IOException, ExportException {
+    void  objectMinCardinalityWithTopTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -103,7 +103,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectMaxCardinalityTest() throws IOException, ExportException {
+    void  objectMaxCardinalityWithTopTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");
@@ -129,7 +129,7 @@ class TopObjectPropertyRestrictionTest extends PartitioningTest {
     }
     
     @Test
-    void  objectExactCardinalityTest() throws IOException, ExportException {
+    void  objectExactCardinalityWithTopTest() throws IOException, ExportException {
         
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass aDash = factory.getOWLClass(base + "A'");

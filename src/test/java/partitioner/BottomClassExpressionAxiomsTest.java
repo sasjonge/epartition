@@ -68,7 +68,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	}
 	
 	@Test
-	void subClassOfWithTopSuperTest() throws IOException, ExportException {
+	void subClassOfWithBottomSuperTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -104,7 +104,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	}
 	
 	@Test
-	void equivalentClassesWithTopTest() throws IOException, ExportException {
+	void equivalentClassesWithBottomTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -140,7 +140,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	} 
 	
 	@Test
-	void equivalentClassesWithTopTest2() throws IOException, ExportException {
+	void equivalentClassesWithBottomTest2() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -176,7 +176,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	}
 	
 	@Test
-	void disjointClassesWithTopTest() throws IOException, ExportException {
+	void disjointClassesWithBottomTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -212,7 +212,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	} 
 	
 	@Test
-	void disJointUnionWithTopAsClassTest() throws IOException, ExportException {
+	void disJointUnionWithBottomAsClassTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");
@@ -252,7 +252,7 @@ class BottomClassExpressionAxiomsTest extends PartitioningTest {
 	}
 	
 	@Test
-	void disJointUnionWithTopInUnionTest() throws IOException, ExportException {
+	void disJointUnionWithBottomInUnionTest() throws IOException, ExportException {
 		
 		OWLClass a = factory.getOWLClass(base + "A");
 		OWLClass b = factory.getOWLClass(base + "B");

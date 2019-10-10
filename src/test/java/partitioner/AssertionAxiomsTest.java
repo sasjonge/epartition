@@ -71,6 +71,66 @@ class AssertionAxiomsTest extends PartitioningTest {
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma));
 	}
+
+	@Test
+	void sameIndividualManyPreTest() throws IOException, ExportException {
+
+		OWLIndividual a = factory.getOWLNamedIndividual(base + "a");
+		OWLIndividual aDash = factory.getOWLNamedIndividual(base + "a'");
+		OWLIndividual b = factory.getOWLNamedIndividual(base + "b");
+		OWLIndividual bDash = factory.getOWLNamedIndividual(base + "b'");
+		OWLIndividual c = factory.getOWLNamedIndividual(base + "c");
+		OWLIndividual cDash = factory.getOWLNamedIndividual(base + "c'");
+		OWLIndividual d = factory.getOWLNamedIndividual(base + "d");
+		OWLIndividual dDash = factory.getOWLNamedIndividual(base + "d'");
+		OWLIndividual e = factory.getOWLNamedIndividual(base + "e");
+		OWLIndividual eDash = factory.getOWLNamedIndividual(base + "e'");
+
+		OWLSameIndividualAxiom alpha = factory.getOWLSameIndividualAxiom(a, aDash);
+		OWLSameIndividualAxiom beta = factory.getOWLSameIndividualAxiom(b, bDash);
+		OWLSameIndividualAxiom gamma = factory.getOWLSameIndividualAxiom(c, cDash);
+		OWLSameIndividualAxiom delta = factory.getOWLSameIndividualAxiom(d, dDash);
+		OWLSameIndividualAxiom epsilon = factory.getOWLSameIndividualAxiom(e, eDash);
+
+		ontology.add(alpha, beta, gamma, delta, epsilon);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(5, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma, delta, epsilon));
+	}
+
+	@Test
+	void sameIndividualManyTest() throws IOException, ExportException {
+
+		OWLIndividual a = factory.getOWLNamedIndividual(base + "a");
+		OWLIndividual aDash = factory.getOWLNamedIndividual(base + "a'");
+		OWLIndividual b = factory.getOWLNamedIndividual(base + "b");
+		OWLIndividual bDash = factory.getOWLNamedIndividual(base + "b'");
+		OWLIndividual c = factory.getOWLNamedIndividual(base + "c");
+		OWLIndividual cDash = factory.getOWLNamedIndividual(base + "c'");
+		OWLIndividual d = factory.getOWLNamedIndividual(base + "d");
+		OWLIndividual dDash = factory.getOWLNamedIndividual(base + "d'");
+		OWLIndividual e = factory.getOWLNamedIndividual(base + "e");
+		OWLIndividual eDash = factory.getOWLNamedIndividual(base + "e'");
+
+		OWLSameIndividualAxiom alpha = factory.getOWLSameIndividualAxiom(a, aDash);
+		OWLSameIndividualAxiom beta = factory.getOWLSameIndividualAxiom(b, bDash);
+		OWLSameIndividualAxiom gamma = factory.getOWLSameIndividualAxiom(c, cDash);
+		OWLSameIndividualAxiom delta = factory.getOWLSameIndividualAxiom(d, dDash);
+		OWLSameIndividualAxiom epsilon = factory.getOWLSameIndividualAxiom(e, eDash);
+
+		OWLSameIndividualAxiom zeta = factory.getOWLSameIndividualAxiom(a,b,c,d,e);
+
+		ontology.add(alpha, beta, gamma, delta, epsilon, zeta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma, delta, epsilon,zeta));
+	}
 	
     @Test
     void differentIndividualsPreTest() throws IOException, ExportException {
@@ -94,24 +154,55 @@ class AssertionAxiomsTest extends PartitioningTest {
     
     @Test
     void differentIndividualsTest() throws IOException, ExportException {
-        
-        OWLIndividual a = factory.getOWLNamedIndividual(base + "a");
-        OWLIndividual aDash = factory.getOWLNamedIndividual(base + "a'");
-        OWLIndividual b = factory.getOWLNamedIndividual(base + "b");
-        OWLIndividual bDash = factory.getOWLNamedIndividual(base + "b'");
-            
-        OWLDifferentIndividualsAxiom alpha = factory.getOWLDifferentIndividualsAxiom(a, aDash);
-        OWLDifferentIndividualsAxiom beta = factory.getOWLDifferentIndividualsAxiom(b, bDash);
-        OWLDifferentIndividualsAxiom gamma = factory.getOWLDifferentIndividualsAxiom(a, b);
-        
-        ontology.add(alpha, beta, gamma);
-        
-        List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
-        
-        assertEquals(1, partitions.size());
-        
-        areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma));
-    }
+
+		OWLIndividual a = factory.getOWLNamedIndividual(base + "a");
+		OWLIndividual aDash = factory.getOWLNamedIndividual(base + "a'");
+		OWLIndividual b = factory.getOWLNamedIndividual(base + "b");
+		OWLIndividual bDash = factory.getOWLNamedIndividual(base + "b'");
+
+		OWLDifferentIndividualsAxiom alpha = factory.getOWLDifferentIndividualsAxiom(a, aDash);
+		OWLDifferentIndividualsAxiom beta = factory.getOWLDifferentIndividualsAxiom(b, bDash);
+		OWLDifferentIndividualsAxiom gamma = factory.getOWLDifferentIndividualsAxiom(a, b);
+
+		ontology.add(alpha, beta, gamma);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha, beta, gamma));
+	}
+
+	@Test
+	void differentIndividualsManyTest() throws IOException, ExportException {
+
+		OWLIndividual a = factory.getOWLNamedIndividual(base + "a");
+		OWLIndividual aDash = factory.getOWLNamedIndividual(base + "a'");
+		OWLIndividual b = factory.getOWLNamedIndividual(base + "b");
+		OWLIndividual bDash = factory.getOWLNamedIndividual(base + "b'");
+		OWLIndividual c = factory.getOWLNamedIndividual(base + "c");
+		OWLIndividual cDash = factory.getOWLNamedIndividual(base + "c'");
+		OWLIndividual d = factory.getOWLNamedIndividual(base + "d");
+		OWLIndividual dDash = factory.getOWLNamedIndividual(base + "d'");
+		OWLIndividual e = factory.getOWLNamedIndividual(base + "e");
+		OWLIndividual eDash = factory.getOWLNamedIndividual(base + "e'");
+
+		OWLSameIndividualAxiom alpha = factory.getOWLSameIndividualAxiom(a, aDash);
+		OWLSameIndividualAxiom beta = factory.getOWLSameIndividualAxiom(b, bDash);
+		OWLSameIndividualAxiom gamma = factory.getOWLSameIndividualAxiom(c, cDash);
+		OWLSameIndividualAxiom delta = factory.getOWLSameIndividualAxiom(d, dDash);
+		OWLSameIndividualAxiom epsilon = factory.getOWLSameIndividualAxiom(e, eDash);
+
+		OWLDifferentIndividualsAxiom zeta = factory.getOWLDifferentIndividualsAxiom(a,b,c,d,e);
+
+		ontology.add(alpha, beta, gamma, delta, epsilon, zeta);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(1, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma, delta, epsilon,zeta));
+	}
     
     @Test
     void classAssertionPreTest() throws IOException, ExportException {
