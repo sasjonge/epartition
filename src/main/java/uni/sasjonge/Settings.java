@@ -79,7 +79,7 @@ public class Settings {
 	public static final int OLH_LAYERS_TO_REMOVE = 1;
 	
 	// ----------- Biconnectivity Heuristic (BH) --------------
-	public static boolean USE_BH = true;
+	public static boolean USE_BH = false;
 	// Max number of axioms of labels to remove
 	public static final int BH_NUM_OF_AXIOM_LABELS = 1;
 	// Number of repetition of this heuristic

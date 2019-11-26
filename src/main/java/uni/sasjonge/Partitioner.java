@@ -134,7 +134,7 @@ public class Partitioner {
 			reasonerFactory = new StructuralReasonerFactory();
 			reasoner = reasonerFactory.createNonBufferingReasoner(oldOntology);
 			long reasonerEndTime = System.nanoTime();
-			System.out.println("Creating a structural readoner took took "
+			System.out.println("Creating a structural reasoner took took "
 					+ (reasonerEndTime - reasonerStartTime) / 1000000 + "ms");
 			builder.append((reasonerEndTime - reasonerStartTime) / 1000000 + ", ");
 

@@ -121,7 +121,11 @@ public class PartitioningCore {
 	// Save one of the edges of a given edge to have an easier way of recall
 	// We only save edges that are labelled with axioms
 	public Map<DefaultEdge, String> edgeToVertex = new HashMap<>();
-	// Map of Axioms to the edges it created
+
+	// Map of vertices to axioms their adjacent edges are labelled with
+    public Set<String> vertexWithAxiomEdges = new HashSet<>();
+
+    // Map of Axioms to the edges it created
 	public Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms = new HashMap<>();
 	Map<OWLAnnotationProperty, Set<OWLAxiom>> annotToAxioms;
 	
@@ -184,8 +188,6 @@ public class PartitioningCore {
 		
 		// Also add the vertices for the equivalentclasses part
 		// of disjoint union
-		// TODO: Is this the right way to get the ObjectUnionOf of the
-		// Disjoint Union Axioms?
 		ontology.axioms(AxiomType.DISJOINT_UNION).forEach(ax -> {
 			OWLEquivalentClassesAxiom eax = ax.getOWLEquivalentClassesAxiom();
 			eax.nestedClassExpressions().forEach(nested -> {
@@ -248,6 +250,8 @@ public class PartitioningCore {
 		}
 
 		// ****************************************************************
+
+		System.out.println("After heuristics");
 		// Search for components without axiom labels and connect them to a partiton
 		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
 		// Collection of all cc with labels
@@ -255,23 +259,26 @@ public class PartitioningCore {
 		// Collection of all cc without labels
 		Set<Set<String>> ccWithoutLabel = new HashSet<>();
 		// Collect the ccs into their respective collection
+		System.out.println("Part 1");
+
+
+		// TODO: Improve speed
 		ciOld.connectedSets().stream().forEach(cc -> {
 			boolean hasLabel = false;
 			for (String ver : cc) {
-				for (DefaultEdge e : g.edgesOf(ver)) {
-					if (edgeToAxioms.containsKey(e)) {
-						ccWithLabel.add(cc);
-						hasLabel = true;
-						break;
-					}
-				}
+			    if (vertexWithAxiomEdges.contains(ver)) {
+                    ccWithLabel.add(cc);
+                    hasLabel = true;
+                    break;
+                }
 			}
 			;
 			if (!hasLabel) {
 				ccWithoutLabel.add(cc);
 			}
 		});
-		
+		System.out.println("Part 2");
+
 		// If we have no cc with a label, then the heuristic removed everything. Show a error message 
 		// and return the original ontology
 		if (ccWithLabel.isEmpty()) {
@@ -772,9 +779,9 @@ public class PartitioningCore {
 			if (!edgeToAxioms.containsKey(labelledEdge)) {
 				edgeToAxioms.put(labelledEdge, new HashSet<OWLAxiom>());
 			}
-			edgeToAxioms.get(labelledEdge).add(ax); 
+			edgeToAxioms.get(labelledEdge).add(ax);
 
-			// Save it creating axiom
+            // Also save the creating axiom
 			if (!createdByAxioms.containsKey(labelledEdge)) {
 				createdByAxioms.put(labelledEdge, new HashSet<OWLAxiom>());
 			}
@@ -959,6 +966,10 @@ public class PartitioningCore {
 
 		// Save one of the vertexes to the edge
 		edgeToVertex.put(edge, vertex);
+
+        // Save the vertices that are adjazent to a edge with a label
+        vertexWithAxiomEdges.add(vertex);
+        vertexWithAxiomEdges.add(vertex2);
 
 		// And return it
 		return edge;
