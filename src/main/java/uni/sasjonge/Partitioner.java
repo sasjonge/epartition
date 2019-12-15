@@ -9,7 +9,9 @@ import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -63,6 +65,9 @@ public class Partitioner {
 
 	public void loadOntology(String input_ontology) {
 
+		System.out.println("-----------------------------------------");
+		System.out.println(input_ontology);
+
 		// A string builder to save the evaluation statistics in a string
 		builder = new StringBuilder();
 
@@ -77,6 +82,14 @@ public class Partitioner {
 		// Save old ontology
 		OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
 
+		OntologyDescriptor.init();
+
+		long endInitTime = System.nanoTime();
+		System.out.println("Initiating classes took " + (endInitTime- startTime) / 1000000 + "ms");
+		if (Settings.EVALUATE) {
+			builder.append(getFileName(input_ontology).substring(1) + ", ");
+		}
+
 		try {
 			// Load the input ontology
 			long loadStartTime = System.nanoTime();
@@ -89,12 +102,14 @@ public class Partitioner {
 
 			long loadEndTime = System.nanoTime();
 			System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime) / 1000000 + "ms");
-
-			builder.append(getFileName(input_ontology) + ", ");
-			builder.append((loadEndTime - loadStartTime) / 1000000 + ", ");
+			if (Settings.EVALUATE) {
+				builder.append(loadedOnt.getAxiomCount() + ", ");
+				builder.append((endInitTime - startTime) / 1000000 + ", ");
+				builder.append((loadEndTime - loadStartTime) / 1000000 + ", ");
+			}
+			long expressStartTime = System.nanoTime();
 
 			// Check expressivity of the ontology and either stop or handle the cases
-			long expressStartTime = System.nanoTime();
 			List<OWLAxiom> axiomsContainingUniversalRole = loadedOnt.referencingAxioms(df.getOWLTopObjectProperty())
 					.collect(Collectors.toList());
 
@@ -107,7 +122,7 @@ public class Partitioner {
 					if (axiomsContainingUniversalRole.size() <= Settings.UNIVERAL_ROLES_TRESHOLD) {
 						// Remove all axioms containing the universal role
 						System.out.println("Removing " + axiomsContainingUniversalRole.size()
-								+ " axioms containig universal roles");
+								+ " axioms containing universal roles");
 						loadedOnt.remove(axiomsContainingUniversalRole);
 					} else {
 						builder = null;
@@ -121,6 +136,9 @@ public class Partitioner {
 
 			long expressEndTime = System.nanoTime();
 			System.out.println("Checking expressivity took " + (expressEndTime - expressStartTime) / 1000000 + "ms");
+			if (Settings.EVALUATE) {
+				builder.append((expressEndTime - expressStartTime) / 1000000 + ", ");
+			}
 
 			// Copying ontology
 			long copyStartTime = System.nanoTime();
@@ -128,20 +146,16 @@ public class Partitioner {
 
 			long copyEndTime = System.nanoTime();
 			System.out.println("Copying the ontology took " + (copyEndTime - copyStartTime) / 1000000 + "ms");
-
-			// Create a reasoner#
-			long reasonerStartTime = System.nanoTime();
-			reasonerFactory = new StructuralReasonerFactory();
-			reasoner = reasonerFactory.createNonBufferingReasoner(oldOntology);
-			long reasonerEndTime = System.nanoTime();
-			System.out.println("Creating a structural reasoner took took "
-					+ (reasonerEndTime - reasonerStartTime) / 1000000 + "ms");
-			builder.append((reasonerEndTime - reasonerStartTime) / 1000000 + ", ");
+			if (Settings.EVALUATE) {
+				builder.append((copyEndTime - copyStartTime) / 1000000 + ", ");
+			}
 
 			long reduceStartTime = System.nanoTime();
 			OWLOntology ontology = null;
 			// ---------------- Ontology level reducer heuristic ----------------------
 			if (Settings.USE_OLH) {
+				reasonerFactory = new StructuralReasonerFactory();
+				reasoner = reasonerFactory.createNonBufferingReasoner(oldOntology);
 				// Remove the "Top-Layer" (the classes highest in the hierachy)
 				ontology = OntologyLevelReducer.removeHighestLevelConc(manager, loadedOnt, reasoner, df,
 						Settings.OLH_LAYERS_TO_REMOVE);
@@ -153,7 +167,6 @@ public class Partitioner {
 			if (Settings.USE_ULH) {
 				// Instantiate the upper level manager
 				UpperLevelManager ulRemove = new UpperLevelManager(Settings.UPPER_LEVEL_FILE);
-				System.out.println("!!!!!!!!!!! ");
 				// Remove all upper level where more than Settings.ULH_REMOVAL_TRESHHOLD percent
 				// of the upper level ontology is contained
 				for (Entry<String, Double> entry : ulRemove.checkForUpperLevel(loadedOnt).entrySet()) {
@@ -166,17 +179,23 @@ public class Partitioner {
 			}
 
 			long reduceEndTime = System.nanoTime();
-			System.out.println("Reducing the ontology took " + (reduceEndTime - reduceStartTime) / 1000000 + "ms");
-			builder.append((reduceEndTime - reduceStartTime) / 1000000 + ",");
+			System.out.println("Reducing the ontology with the choosen heuristics took " + (reduceEndTime - reduceStartTime) / 1000000 + "ms");
+			if (Settings.EVALUATE) {
+				builder.append((reduceEndTime - reduceStartTime) / 1000000 + ",");
+			}
 
 			long startPartTime = System.nanoTime();
 			// Call the partitioning algorithm
 			List<OWLOntology> partitionedOntologies = pc.partition(ontology);
 			long endPartTime = System.nanoTime();
 			System.out.println("Partitioning took " + (endPartTime - startPartTime) / 1000000 + "ms");
-			builder.append((endPartTime - startPartTime) / 1000000 + ", ");
+
+			if (Settings.EVALUATE) {
+				builder.append((endPartTime - startPartTime) / 1000000 + ", ");
+			}
 
 			if (Settings.EXPORT_ONTOLOGIES) {
+				long startExportTime = System.nanoTime();
 				// Get the name (last part of the iri) to save the file (use the input)
 				String fName = input_ontology.substring(input_ontology.lastIndexOf("/")).replaceAll(".owl", "");
 				// Format for the ontologies
@@ -192,18 +211,25 @@ public class Partitioner {
 						e.printStackTrace();
 					}
 				}
+				long endExportTime = System.nanoTime();
+				System.out.println("Exporting ontologies took " + (endExportTime - startExportTime) / 1000000 + "ms");
+				if (Settings.EVALUATE) {
+					builder.append((endExportTime - startExportTime) / 1000000 + ", ");
+				}
+
 			}
 
 			// Export the graph
 			long startGraphTime = System.nanoTime();
 			// Initiate the graphexporter (create the hierachy and descriptors)
 			GraphExporter.init(oldOntology);
-			System.out.println("Finished init");
 
 			// Choose type of output graph
 			switch (Settings.OUTPUT_GRAPH_TYPE) {
 
 			// Alternative: Create the complex graph created by the algorithm
+				case 2:
+					break;
 			case 1:
 				GraphExporter.exportConstraintGraph(pc.g,
 						Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
@@ -219,7 +245,17 @@ public class Partitioner {
 			long endGraphTime = System.nanoTime();
 			System.out.println("Graph building took " + (endGraphTime - startGraphTime) / 1000000 + "ms");
 
-			builder.append((endGraphTime - startGraphTime) / 1000000 + ", ");
+			if (Settings.EVALUATE) {
+				builder.append((endGraphTime - startGraphTime) / 1000000 + ", ");
+			}
+
+			long endTime = System.nanoTime();
+			System.out.println("Overall: " + (endTime - startTime) / 1000000 + "ms");
+			if (Settings.EVALUATE) {
+				builder.append((endTime - startTime) / 1000000 + ", ");
+				builder.append(String.format("%.2f", (getPercentageOfLargestPart(partitionedOntologies) * 100)) + ", ");
+				builder.append(partitionedOntologies.size());
+			}
 
 			// Add the output graph to the builder
 			// builder.append(graphStructure);
@@ -248,39 +284,77 @@ public class Partitioner {
 		return builder != null ? builder.toString() : null;
 	}
 
+	/**
+	 * Calculates the percentage of the biggest partition
+	 * @param partitionedOntologies
+	 * @return
+	 */
+	public double getPercentageOfLargestPart(List<OWLOntology> partitionedOntologies) {
+		int biggestSize = 0;
+		int overallAxioms = 0;
+		for (OWLOntology ont : partitionedOntologies) {
+			int logAxiomsOfThisOnt = ont.getLogicalAxiomCount();
+			if (biggestSize <= logAxiomsOfThisOnt) {
+				biggestSize = logAxiomsOfThisOnt;
+			}
+			overallAxioms = overallAxioms + logAxiomsOfThisOnt;
+		}
+
+		return overallAxioms > 0 ? ((double) biggestSize) / ((double) overallAxioms) : 1.0d;
+	}
+
 	public static void main(String[] args) {
 		// Read all files in the given directory
 		try (Stream<Path> paths = Files.walk(Paths.get(Settings.ONTOLOGIES_DIRECTORY))) {
 
+			List<String> failed = new LinkedList<>();
+
 			// Save the statistics for the partitioning in a file
-			File fout = new File("/home/sascha/Desktop/statistics.xml");
+			File fout = new File(Settings.EVALUATION_OUTPUT_FILE);
 			FileOutputStream fos = new FileOutputStream(fout);
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+			bw.write("Name, Num. of Axioms, Initiating classes (ms), Loading the Ontology (ms), " +
+					"Handle Universal Roles (ms), Copy Ontology (ms), Heuristics (ms), Partitioning Algorithm (ms), " +
+					(Settings.EXPORT_ONTOLOGIES ? "Exporting Ontologies (ms)," : "") + "Export Graph (ms), Overall (ms), Perc. of biggest Part, Number of Part\n");
 
 			paths.filter(Files::isRegularFile).forEach(e -> {
-				// For each file
-				// Create a partitioner
-				Partitioner part = new Partitioner();
-				// Load and partition the ontology
-				if (e.toAbsolutePath().toString().endsWith(".owl")) {
-					part.loadOntology(e.toAbsolutePath().toString());
+				try {
+					// For each file
+					// Create a partitioner
+					Partitioner part = new Partitioner();
+					// Load and partition the ontology
+					if (e.toAbsolutePath().toString().endsWith(".owl") || e.toAbsolutePath().toString().endsWith(".xml")) {
+						part.loadOntology(e.toAbsolutePath().toString());
 
-					try {
-						// Save the statistics of this partition in a string
-						String stats = part.getStatistics();
-						if (stats != null) {
-							// And write it in the output file
-							bw.write(stats + "\n");
-							bw.flush();
+						try {
+							// Save the statistics of this partition in a string
+							String stats = part.getStatistics();
+							if (stats != null && Settings.EVALUATE) {
+								// And write it in the output file
+								bw.write(stats + "\n");
+								bw.flush();
+							}
+						} catch (IOException e1) {
+							e1.printStackTrace();
 						}
-					} catch (IOException e1) {
-						e1.printStackTrace();
+
+					} else {
+						System.err.println("The file " + e.toAbsolutePath().toString()
+								+ " isn't a .owl file, therefore, it wont be loaded");
 					}
-				} else {
-					System.err.println("The file " + e.toAbsolutePath().toString()
-							+ " isn't a .owl file, therefore, it wont be loaded");
+
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					failed.add(e.toAbsolutePath().toString() + " failed\n");
 				}
+				OntologyDescriptor.clearMemory();
+				GraphExporter.clearMemory();
+				System.gc();
 			});
+			bw.write("/n");
+			for (String failure : failed) {
+				bw.write(failure);
+			}
 			bw.close();
 		} catch (IOException e) {
 			e.printStackTrace();

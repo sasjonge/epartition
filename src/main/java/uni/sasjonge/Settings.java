@@ -12,10 +12,14 @@ public class Settings {
 	// -------------------------- INPUT ONTOLOGIES -----------------------------
 	// The input directory where the .owl files should be
 	public static final String ONTOLOGIES_DIRECTORY = "/home/sascha/Desktop/onts";
-	
+
+	// ---------------------- Evaluation Data Output --------------------------
+	public static final boolean EVALUATE = true;
+	public static final String EVALUATION_OUTPUT_FILE = "/home/sascha/Desktop/statistics.xml";
+
 	// ----------------------- GRAPH OUTPUT ------------------------------------
 	// The output path for the graph
-	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
+	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/bioportal";
 
 	// The type of the output graph:
 	// 0 = Partition structure graph
@@ -24,9 +28,9 @@ public class Settings {
 	
 	// For the constraint graph
 	// Should axioms be shown in the labels?
-	public static final boolean SHOW_AXIOMS = true;
+	public static final boolean SHOW_AXIOMS = false;
 	// If yes, how many?
-	public static final int AXIOM_COUNT = 6;
+	public static final int AXIOM_COUNT = 3;
 	
 	// How many individual labels should be shown
 	public static final int NUM_OF_INDIV_LABELS = 3;
@@ -49,14 +53,14 @@ public class Settings {
 	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
 	// The output path for the graph
 	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
-	
+
 	// Should the created partitions exported as owl?
 	public static boolean EXPORT_ONTOLOGIES = false;
 	
 	// ------- Settings for the default partitioner ----------
 	
 	// Handling of RDF labels as names and the used lang 
-	public static final boolean USE_RDF_LABEL = true;
+	public static final boolean USE_RDF_LABEL = false;
 	public static final String lang = "en";
 	
 	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>

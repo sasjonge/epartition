@@ -18,16 +18,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
-import org.semanticweb.owlapi.model.OWLAnnotation;
-import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLAnnotationValue;
-import org.semanticweb.owlapi.model.OWLAxiom;
-import org.semanticweb.owlapi.model.OWLClass;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLLiteral;
-import org.semanticweb.owlapi.model.OWLObject;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.search.EntitySearcher;
 
 import uni.sasjonge.Settings;
@@ -39,10 +30,11 @@ import uni.sasjonge.Settings;
  */
 public class OntologyDescriptor {
 
-	public static ManchesterOWLSyntaxOWLObjectRendererImpl manchester = new ManchesterOWLSyntaxOWLObjectRendererImpl();
+	public static ManchesterOWLSyntaxOWLObjectRendererImpl manchester;
 
 	// Maps the OWLObjects to a name
-	public static Map<OWLObject, String> owlObjectToString = new HashMap<>();
+	public static Map<OWLObject, String> owlObjectToString;
+	public static Map<IRI, String> iriToString = new HashMap<>();
 
 	// How many classes are represented through a [ClassLabel]
 	private Map<String, Integer> numberOfRepresentedClasses;
@@ -66,6 +58,8 @@ public class OntologyDescriptor {
 
 		// Create
 		numberOfRepresentedClasses = new HashMap<>();
+
+		init();
 	}
 
 	/**
@@ -76,6 +70,7 @@ public class OntologyDescriptor {
 	 * @param ont
 	 */
 	public static void initRDFSLabel(OWLOntology ont) {
+		init();
 
 		// For each class in the signature
 		ont.classesInSignature().forEach(c -> {
@@ -92,7 +87,9 @@ public class OntologyDescriptor {
 						// Check if the language is the one we want
 						if (!literal.hasLang() || literal.hasLang(Settings.lang)) {
 							// get the value. Map the class to the literal name
-							owlObjectToString.put(c, getCleanName(literal.getLiteral().toString()));
+							String name = getCleanName(literal.getLiteral().toString());
+							owlObjectToString.put(c, name);
+							iriToString.put(c.getIRI(), name);
 							isLabelled = true;
 						}
 					}
@@ -100,7 +97,9 @@ public class OntologyDescriptor {
 			});
 			// If the class wasnt labelled, save the cleaned toString result
 			if (!isLabelled) {
-				owlObjectToString.put(c, getCleanName(c.toString()));
+				String name = getCleanName(c.toString());
+				owlObjectToString.put(c, name);
+				iriToString.put(c.getIRI(), name);
 			}
 		});
 
@@ -110,13 +109,17 @@ public class OntologyDescriptor {
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
-						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						String name = ((OWLLiteral) a.getValue()).getLiteral();
+						owlObjectToString.put(c, name);
+						iriToString.put(c.getIRI(), name + Settings.PROPERTY_0_DESIGNATOR);
 						isLabelled = true;
 					}
 				}
 			});
 			if (!isLabelled) {
-				owlObjectToString.put(c, getCleanName(c.toString()));
+				String name = getCleanName(c.toString());
+				owlObjectToString.put(c, name);
+				iriToString.put(c.getIRI(), name + Settings.PROPERTY_0_DESIGNATOR);
 			}
 		});
 
@@ -126,14 +129,17 @@ public class OntologyDescriptor {
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
-						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						String name = ((OWLLiteral) a.getValue()).getLiteral();
+						owlObjectToString.put(c, name);
+						iriToString.put(c.getIRI(), name + Settings.PROPERTY_0_DESIGNATOR);
 						isLabelled = true;
 					}
 				}
 			});
 			if (!isLabelled) {
-				owlObjectToString.put(c, getCleanName(c.toString()));
-			}
+				String name = getCleanName(c.toString());
+				owlObjectToString.put(c, name);
+				iriToString.put(c.getIRI(), name + Settings.PROPERTY_0_DESIGNATOR);			}
 		});
 
 		// ... individuals
@@ -142,13 +148,17 @@ public class OntologyDescriptor {
 			ont.annotationAssertionAxioms(c.getIRI()).forEach(a -> {
 				if (a.getProperty().isLabel()) {
 					if (a.getValue() instanceof OWLLiteral) {
-						owlObjectToString.put(c, ((OWLLiteral) a.getValue()).getLiteral());
+						String name = ((OWLLiteral) a.getValue()).getLiteral();
+						owlObjectToString.put(c, name);
+						iriToString.put(c.getIRI(), name);
 						isLabelled = true;
 					}
 				}
 			});
 			if (!isLabelled) {
-				owlObjectToString.put(c, getCleanName(c.toString()));
+				String name = getCleanName(c.toString());
+				owlObjectToString.put(c, name);
+				iriToString.put(c.getIRI(), name);
 			}
 		});
 
@@ -193,6 +203,23 @@ public class OntologyDescriptor {
 			owlObjectToString.put(owlOb, toReturn);
 		}
 		// Return the clean name
+		return toReturn;
+
+	}
+
+	/**
+	 *
+	 * Returns the "clean" name for the given object. It also saves the name into
+	 * the map owlObjectToString to reduce calls to getCleanName
+	 *
+	 * @param owlOb A OWLObject
+	 * @return The cleaned name for the given Object
+	 */
+	public static String getCleanNameOWLIRI(IRI iri) {
+
+		// Try to get the name of the object from the map
+		String toReturn = iriToString.get(iri);
+
 		return toReturn;
 
 	}
@@ -624,7 +651,6 @@ public class OntologyDescriptor {
 	 * 
 	 * @param cc              Connected Component, List of Vertex Names
 	 * @param g               Graph
-	 * @param edgeToAxiomName A map from edges to axioms
 	 * @return A String in form of a list of all axioms
 	 */
 	public String getAxiomString(Set<OWLAxiom> axioms) {
@@ -655,6 +681,26 @@ public class OntologyDescriptor {
 		} else {
 			return "";
 		}
+	}
+
+	public static void init() {
+		if (owlObjectToString == null) {
+			owlObjectToString = new HashMap<>();
+		}
+		if (iriToString == null) {
+			iriToString = new HashMap<>();
+		}
+		if (manchester == null) {
+			manchester = new ManchesterOWLSyntaxOWLObjectRendererImpl();
+		}
+	}
+
+	public static void clearMemory() {
+		manchester = null;
+		owlObjectToString = null;
+		iriToString = null;
+		mapVertexToManchester = null;
+
 	}
 
 }

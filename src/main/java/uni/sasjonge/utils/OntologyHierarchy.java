@@ -55,7 +55,7 @@ public class OntologyHierarchy {
 	OWLDataFactory df;
 
 	public OntologyHierarchy(OWLOntology ontology) throws OWLOntologyCreationException {
-		
+
 		// Create a manager
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		OWLOntology copydOnt = manager.copyOntology(ontology, OntologyCopy.DEEP);

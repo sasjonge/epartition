@@ -197,15 +197,17 @@ public class GraphExporter {
 		builder.append("], ");
 
 		// Create a map of map as a matrix for connectedness
-		Map<String, Map<String, Integer>> matrix = new HashMap<>();
+        Map<Integer,Set<String>> hashToCC = new HashMap<>();
+		Map<Integer, Map<Integer, Integer>> matrix = new HashMap<>();
 		// For each cc
 		for (Set<String> cc : ci.connectedSets()) {
-			// Add the cc to the map
-			matrix.put(cc.toString() + "", new HashMap<>());
+			// Add the cc to the maps
+			matrix.put(cc.hashCode(), new HashMap<>());
+			hashToCC.put(cc.hashCode(), cc);
 			// For each cc2
 			for (Set<String> cc2 : ci.connectedSets()) {
 				// Use cc as a key in the matrix for cc2 and 0
-				matrix.get(cc.toString() + "").put(cc2.toString() + "", new Integer(0));
+				matrix.get(cc.hashCode()).put(cc2.hashCode(), new Integer(0));
 			}
 		}
 
@@ -253,7 +255,7 @@ public class GraphExporter {
 				if (edgeList.isEmpty()) {
 					// If there are no edges of this type, add one
 					edge = ccGraph.addEdge(ccToVertexName.get(roleToCC.getValue()), ccToVertexName.get(ccOfRole1));
-					matrix.get(roleToCC.getValue() + "").put(ccOfRole1.toString() + "", new Integer(1));
+					matrix.get(roleToCC.getValue().hashCode()).put(ccOfRole1.hashCode(), new Integer(1));
 				} else if (edgeList.size() == 1) {
 					// If the edgelist is not empty it should only contain one element.
 					// So do nothing here (beside increasing the iterator)
@@ -286,10 +288,10 @@ public class GraphExporter {
 		// Save matrix to the string
 		builder.append("[");
 
-		for (Entry<String, Map<String, Integer>> row : matrix.entrySet()) {
+		for (Entry<Integer, Map<Integer, Integer>> row : matrix.entrySet()) {
 			builder.append("[");
-			for (Entry<String, Integer> e : row.getValue().entrySet()) {
-				builder.append(e.getValue() + ", ");
+			for (Entry<Integer, Integer> e : row.getValue().entrySet()) {
+				builder.append(hashToCC.get(e.getValue().intValue()) + ", ");
 			}
 			builder.append("],");
 
@@ -436,6 +438,7 @@ public class GraphExporter {
 	public static void init(OWLOntology ontology) {
 
 		try {
+
 			// Initialize a hierachy structure for the ontology
 			ontHierachy = new OntologyHierarchy(ontology);
 
@@ -445,6 +448,15 @@ public class GraphExporter {
 		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void clearMemory() {
+		ontHierachy = null;
+		ontDescriptor = null;
+		ccToLogicalAxiomCount = null;
+		ccToOtherAxiomCount = null;
+		ccToAxioms = null;
+		System.gc();
 	}
 
 }
