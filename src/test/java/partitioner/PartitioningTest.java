@@ -19,6 +19,7 @@ import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
 import uni.sasjonge.Settings;
+import uni.sasjonge.utils.OntologyDescriptor;
 
 abstract class PartitioningTest {
 
@@ -42,6 +43,8 @@ abstract class PartitioningTest {
 		deactivateHeuristics();
 		factory = manager.getOWLDataFactory();
 		ontology = manager.createOntology();
+
+		OntologyDescriptor.init();
 	}
 	
 	public void deactivateHeuristics() {

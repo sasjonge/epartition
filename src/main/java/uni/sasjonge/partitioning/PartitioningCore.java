@@ -94,6 +94,7 @@ import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.axiomproviders.PropertyChainAxiomProvider;
+import org.semanticweb.owlapi.model.parameters.Imports;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.deser.impl.ExternalTypeHandler.Builder;
@@ -145,6 +146,7 @@ public class PartitioningCore {
      */
     public List<OWLOntology> partition(OWLOntology ontology) throws IOException, ExportException {
 
+        g  = new DefaultUndirectedGraph<>(DefaultEdge.class);
         // The partitions
         List<OWLOntology> toReturn = new ArrayList<>();
 
@@ -152,7 +154,7 @@ public class PartitioningCore {
 
         // Add the Vertexes to our defined algorithm
         // Vertex: ObjectProperties
-        ontology.objectPropertiesInSignature().forEach(objProp -> {
+        ontology.objectPropertiesInSignature(Imports.fromBoolean(true)).forEach(objProp -> {
             if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_0_DESIGNATOR);
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_1_DESIGNATOR);
@@ -160,24 +162,24 @@ public class PartitioningCore {
         });
 
         // Vertex: DataProperties
-        ontology.dataPropertiesInSignature().forEach(dataProp -> {
+        ontology.dataPropertiesInSignature(Imports.fromBoolean(true)).forEach(dataProp -> {
             if (!dataProp.isOWLTopDataProperty() && !dataProp.isTopEntity()) {
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(dataProp) + Settings.PROPERTY_0_DESIGNATOR);
             }
         });
 
         // Vertex: Individuals
-        ontology.individualsInSignature().forEach(indiv -> {
+        ontology.individualsInSignature(Imports.fromBoolean(true)).forEach(indiv -> {
             g.addVertex(OntologyDescriptor.getCleanNameOWLObj(indiv));
         });
 
         // Save all vertexes that will later label the cc structure
-        Set<String> labellingVertexes = ontology.classesInSignature().map(e -> OntologyDescriptor.getCleanNameOWLObj(e))
+        Set<String> labellingVertexes = ontology.classesInSignature(Imports.fromBoolean(true)).map(e -> OntologyDescriptor.getCleanNameOWLObj(e))
                 .collect(Collectors.toSet());
         labellingVertexes.addAll(g.vertexSet());
 
         // Vertex: SubConcepts
-        ontology.logicalAxioms().forEach(a -> {
+        ontology.logicalAxioms(Imports.fromBoolean(true)).forEach(a -> {
             a.nestedClassExpressions().forEach(nested -> {
                 if (!nested.isOWLThing()) {
                     g.addVertex(OntologyDescriptor.getCleanNameOWLObj(nested));
@@ -188,7 +190,7 @@ public class PartitioningCore {
 
         // Also add the vertices for the equivalentclasses part
         // of disjoint union
-        ontology.axioms(AxiomType.DISJOINT_UNION).forEach(ax -> {
+        ontology.axioms(AxiomType.DISJOINT_UNION, Imports.fromBoolean(true)).forEach(ax -> {
             OWLEquivalentClassesAxiom eax = ax.getOWLEquivalentClassesAxiom();
             eax.nestedClassExpressions().forEach(nested -> {
                 if (!nested.isOWLThing()) {
@@ -199,13 +201,18 @@ public class PartitioningCore {
 
 
         // TODO: Any faster way to get all names of anonymous classes?
-        Pattern pattern = Pattern.compile("_:genid[0-9]*");
-        ontology.logicalAxioms().forEach(a -> {
-            Matcher matcher = pattern.matcher(a.toString());
-            if (matcher.find()) {
-                g.addVertex(matcher.group());
-            }
-        });
+        // Pattern pattern = Pattern.compile("_:genid[0-9]*");
+        // ontology.logicalAxioms().forEach(a -> {
+        //    Matcher matcher = pattern.matcher(a.toString());
+        //    if (matcher.find()) {
+        //        g.addVertex(matcher.group());
+        //    }
+        // });
+
+        ontology.referencedAnonymousIndividuals(Imports.fromBoolean(true)).forEach(anonIndiv ->
+                g.addVertex(OntologyDescriptor.getCleanNameOWLObj(anonIndiv))
+        );
+        //ontology.anonymousIndividuals()
 
         long addVertexEndTime = System.nanoTime();
         System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000 + "ms");
@@ -221,7 +228,7 @@ public class PartitioningCore {
         // Edge: All sub concepts (corresponding to line 3 of the algorithm in the
         // paper)
         // in the paper
-        ontology.logicalAxioms().forEach(a -> {
+        ontology.logicalAxioms(Imports.fromBoolean(true)).forEach(a -> {
             a.nestedClassExpressions().forEach(nested -> {
                 if (!nested.isOWLThing()) {
                     this.addSubConceptEdges(nested);
@@ -235,7 +242,7 @@ public class PartitioningCore {
         // Add edges for all axioms (corresponding to line 4 of the algorithm in the
         // paper)
         long addAxiomEdgeStartTime = System.nanoTime();
-        ontology.logicalAxioms().forEach(this::addAxiomEdges);
+        ontology.logicalAxioms(Imports.fromBoolean(true)).forEach(this::addAxiomEdges);
         long addAxiomEdgeEndTime = System.nanoTime();
 
         System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
@@ -308,11 +315,12 @@ public class PartitioningCore {
         System.out.println("CCs: " + ci.connectedSets().size());
 
         // Add Annotations and Declarations as labels to the graph
-        ontology.axioms().forEach(ax -> {
+        ontology.axioms(Imports.fromBoolean(true)).forEach(ax -> {
             if (!ax.isLogicalAxiom()) {
                 addNonLogicalAxiomEdges(ontology, ax);
             }
         });
+
 
         // Create the new ontologies (if flag is set, that we need them for the output)
         toReturn = createOntologyFromCC(ci.connectedSets(), ontology);
@@ -946,7 +954,7 @@ public class PartitioningCore {
      *
      * @param g
      * @param vertex
-     * @param cleanNameOWLObj
+     * @param vertex2
      * @return
      */
     private DefaultEdge addEdgeHelp(Graph<String, DefaultEdge> g, String vertex, String vertex2) {
@@ -1168,8 +1176,9 @@ public class PartitioningCore {
      * Given a List of connected components and a map mapping edges to sets of
      * axioms return a map, that maps the cc to their axioms
      *
-     * @param connectedSets
-     * @param axiomToEdges
+     * @param g
+     * @param edgeToAxiom
+     * @param edgeToVertex
      * @return Mapping from cc to axioms
      */
     public static Map<String, Set<OWLAxiom>> getCCToAxioms(Graph<String, DefaultEdge> g,
@@ -1207,7 +1216,7 @@ public class PartitioningCore {
 
         // This steps should be limited linearly by the number of vertices
         for (Set<String> cc : connectedSets) {
-            String ccName = cc.toString() + "";
+            String ccName = cc.hashCode() + "";
             for (String vert : cc) {
                 toReturn.put(vert, ccName);
             }

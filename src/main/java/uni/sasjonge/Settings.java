@@ -15,11 +15,11 @@ public class Settings {
 
 	// ---------------------- Evaluation Data Output --------------------------
 	public static final boolean EVALUATE = true;
-	public static final String EVALUATION_OUTPUT_FILE = "/home/sascha/Desktop/statistics.xml";
+	public static final String EVALUATION_OUTPUT_FILE = ONTOLOGIES_DIRECTORY + "_statistics.xml";
 
 	// ----------------------- GRAPH OUTPUT ------------------------------------
 	// The output path for the graph
-	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/bioportal";
+	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/bioportal2";
 
 	// The type of the output graph:
 	// 0 = Partition structure graph
@@ -28,7 +28,7 @@ public class Settings {
 	
 	// For the constraint graph
 	// Should axioms be shown in the labels?
-	public static final boolean SHOW_AXIOMS = false;
+	public static final boolean SHOW_AXIOMS = true;
 	// If yes, how many?
 	public static final int AXIOM_COUNT = 3;
 	
@@ -60,7 +60,7 @@ public class Settings {
 	// ------- Settings for the default partitioner ----------
 	
 	// Handling of RDF labels as names and the used lang 
-	public static final boolean USE_RDF_LABEL = false;
+	public static final boolean USE_RDF_LABEL = true;
 	public static final String lang = "en";
 	
 	// Designators for R (so r1 would be r<PROPERTY_1_DESIGNATOR>
@@ -69,18 +69,25 @@ public class Settings {
 	
 	// How to handle universal roles
 	// - do we even want to handle them? if false, the tool refuses universal roles
-	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
+	public static final boolean HANDLE_UNIVERSAL_ROLES = false;
 	// - if true, we can set a treshold to which point the program 
 	public static final int UNIVERAL_ROLES_TRESHOLD = 8;
 	
 	// Should the removed axioms be printed?
-	public static final boolean PRINT_REMOVED_AXIOMS = false;
+	public static final boolean PRINT_REMOVED_AXIOMS = true;
 	
 	// -------------- Settings for heuristics -----------------
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static boolean USE_OLH = false;
+	public static boolean USE_OLH = true;
 	// Number of "layers" to remove in the OntologyLevelReducer
 	public static final int OLH_LAYERS_TO_REMOVE = 1;
+
+	// Alternative (or addition): OLH on biggest component after partitioning
+	public static boolean USE_OLH_AFTER = false;
+	// How many repetitions of this heuristic (one level is removed in every step)
+	public static int OLH_AFTER_REPETITIONS = 4;
+	// Minimal portion of ontology to repeat the heuristic
+	public static double OLH_AFTER_TRESHHOLD = 0.9;
 	
 	// ----------- Biconnectivity Heuristic (BH) --------------
 	public static boolean USE_BH = false;

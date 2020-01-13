@@ -157,14 +157,14 @@ public class GraphExporter {
 
 			// If there are classes in this cc
 			if (classesForThisCC.size() > 0) {
-				vertexToClasses.put(cc.toString() + "", classesForThisCC);
+				vertexToClasses.put(cc.hashCode() + "", classesForThisCC);
 			}
 
 			// Repeat the same for the individuals
 			individualsForThisCC.retainAll(individuals);
 
 			if (individualsForThisCC.size() > 0) {
-				vertexToIndividuals.put(cc.toString() + "", individualsForThisCC);
+				vertexToIndividuals.put(cc.hashCode() + "", individualsForThisCC);
 			}
 		}
 
@@ -175,16 +175,16 @@ public class GraphExporter {
 		for (Set<String> cc : ci.connectedSets()) {
 
 			// If there is at least one axiom in this cc
-			if (ccToLogicalAxiomCount.get(cc.toString() + "") != null) {
+			if (ccToLogicalAxiomCount.get(cc.hashCode() + "") != null) {
 
 				// Add the number of axioms for this cc to the string
-				builder.append(ccToLogicalAxiomCount.get(cc.toString() + "").toString() + ", ");
+				builder.append(ccToLogicalAxiomCount.get(cc.hashCode() + "").toString() + ", ");
 
 				// Save out name for the cc (used as a key)
-				ccToVertexName.put(cc, cc.toString() + "");
+				ccToVertexName.put(cc, cc.hashCode() + "");
 
 				// Add the cc as a vertex
-				ccGraph.addVertex(cc.toString() + "");
+				ccGraph.addVertex(cc.hashCode() + "");
 
 				// Save the cc as a cc with axioms
 				ccWithAxioms.add(cc);
@@ -252,7 +252,7 @@ public class GraphExporter {
 				// Get all edges that are between the cc of role0 and role 1
 				Set<DefaultEdge> edgeList = ccGraph.getAllEdges(ccToVertexName.get(roleToCC.getValue()),
 						ccToVertexName.get(ccOfRole1));
-				if (edgeList.isEmpty()) {
+				if (edgeList == null || edgeList.isEmpty()) {
 					// If there are no edges of this type, add one
 					edge = ccGraph.addEdge(ccToVertexName.get(roleToCC.getValue()), ccToVertexName.get(ccOfRole1));
 					matrix.get(roleToCC.getValue().hashCode()).put(ccOfRole1.hashCode(), new Integer(1));
@@ -367,7 +367,7 @@ public class GraphExporter {
 			}
 
 			// Map the cc to the number of axioms
-			ccToAxiomsCount.put(cc.toString() + "", count);
+			ccToAxiomsCount.put(cc.hashCode() + "", count);
 		}
 
 		return ccToAxiomsCount;
@@ -396,10 +396,10 @@ public class GraphExporter {
 				// If there are axioms labelling this vertex
 				if (vertexToAxiom.get(vert) != null) {
 					// Add the axioms to the map
-					if (!vertexToAxioms.containsKey(cc.toString() + "")) {
-						vertexToAxioms.put(cc.toString() + "", new HashSet<>());
+					if (!vertexToAxioms.containsKey(cc.hashCode() + "")) {
+						vertexToAxioms.put(cc.hashCode() + "", new HashSet<>());
 					}
-					vertexToAxioms.get(cc.toString() + "").addAll(vertexToAxiom.get(vert));
+					vertexToAxioms.get(cc.hashCode() + "").addAll(vertexToAxiom.get(vert));
 
 				}
 			}

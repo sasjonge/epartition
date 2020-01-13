@@ -9,10 +9,7 @@ import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,6 +59,7 @@ public class Partitioner {
 	OWLReasoner reasoner;
 	OWLDataFactory df;
 	StringBuilder builder;
+	List<OWLOntology> partitionedOntologies;
 
 	public void loadOntology(String input_ontology) {
 
@@ -125,14 +123,16 @@ public class Partitioner {
 								+ " axioms containing universal roles");
 						loadedOnt.remove(axiomsContainingUniversalRole);
 					} else {
-						builder = null;
+						builder = new StringBuilder(input_ontology + " contains more than the allowed number of axioms with univeral roles");
 						return;
 					}
 				} else {
-					builder = null;
+					builder = new StringBuilder(input_ontology + " contains universal roles and cannot be handled");
 					return;
 				}
 			}
+
+			//SafetyChecker.check
 
 			long expressEndTime = System.nanoTime();
 			System.out.println("Checking expressivity took " + (expressEndTime - expressStartTime) / 1000000 + "ms");
@@ -178,20 +178,87 @@ public class Partitioner {
 				}
 			}
 
-			long reduceEndTime = System.nanoTime();
-			System.out.println("Reducing the ontology with the choosen heuristics took " + (reduceEndTime - reduceStartTime) / 1000000 + "ms");
-			if (Settings.EVALUATE) {
-				builder.append((reduceEndTime - reduceStartTime) / 1000000 + ",");
-			}
+			// ---------------- Upper level remover version 2 ------------------
+			if (Settings.USE_OLH_AFTER) {
 
-			long startPartTime = System.nanoTime();
-			// Call the partitioning algorithm
-			List<OWLOntology> partitionedOntologies = pc.partition(ontology);
-			long endPartTime = System.nanoTime();
-			System.out.println("Partitioning took " + (endPartTime - startPartTime) / 1000000 + "ms");
+				long startPreHeuristicTime = System.nanoTime();
+				// This part belongs to heuristic
+				long sumOfHeuristicTime = 0;
+				reasonerFactory = new StructuralReasonerFactory();
+				int sizeOfOldOnt = oldOntology.getLogicalAxiomCount();
 
-			if (Settings.EVALUATE) {
-				builder.append((endPartTime - startPartTime) / 1000000 + ", ");
+				boolean repeat = true;
+
+				int step = 0;
+
+				long sumOfPartTime = System.nanoTime() - startPreHeuristicTime;
+				while (repeat) {
+
+					long startPartTime = System.nanoTime();
+
+					partitionedOntologies = pc.partition(ontology);
+
+					sumOfPartTime += System.nanoTime() - startPartTime;
+
+					long startHeuristicTime = System.nanoTime();
+					Collections.sort(partitionedOntologies, new Comparator<OWLOntology>() {
+						@Override
+						public int compare(OWLOntology ontology, OWLOntology t1) {
+							return t1.getLogicalAxiomCount() - ontology.getLogicalAxiomCount();
+						}
+					});
+
+					OWLOntology biggest = partitionedOntologies.iterator().next();
+
+					if (sizeOfOldOnt * Settings.OLH_AFTER_TRESHHOLD >= biggest.getLogicalAxiomCount() || step >= Settings.OLH_AFTER_REPETITIONS) {
+						if (sizeOfOldOnt * Settings.OLH_AFTER_TRESHHOLD >= biggest.getLogicalAxiomCount()) {
+							System.out.println( sizeOfOldOnt+ " bigger as " + biggest.getLogicalAxiomCount());
+						}
+						System.out.println("!!!!!!!!!!!!! " + partitionedOntologies.size());
+
+						repeat = false;
+					} else {
+						reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
+						// Remove the "Top-Layer" (the classes highest in the hierachy)
+						ontology = OntologyLevelReducer.removeHighestLevelLimited(manager, ontology, reasoner, df, biggest
+								);
+
+						if (!OntologyLevelReducer.changedSomething) {
+							repeat = false;
+						}
+					}
+
+					step++;
+					sumOfHeuristicTime += System.nanoTime() - startHeuristicTime;
+
+				}
+				long reduceEndTime = System.nanoTime();
+				System.out.println("Reducing the ontology with the choosen heuristics took " + sumOfHeuristicTime/ 1000000 + "ms");
+				if (Settings.EVALUATE) {
+					builder.append(sumOfHeuristicTime / 1000000 + ",");
+				}
+				System.out.println("Partitioning took " + sumOfPartTime / 1000000 + "ms");
+
+				if (Settings.EVALUATE) {
+					builder.append(sumOfPartTime / 1000000 + ", ");
+				}
+			} else {
+
+				long reduceEndTime = System.nanoTime();
+				System.out.println("Reducing the ontology with the choosen heuristics took " + (reduceEndTime - reduceStartTime) / 1000000 + "ms");
+				if (Settings.EVALUATE) {
+					builder.append((reduceEndTime - reduceStartTime) / 1000000 + ",");
+				}
+
+				long startPartTime = System.nanoTime();
+				// Call the partitioning algorithm
+				partitionedOntologies = pc.partition(ontology);
+				long endPartTime = System.nanoTime();
+				System.out.println("Partitioning took " + (endPartTime - startPartTime) / 1000000 + "ms");
+
+				if (Settings.EVALUATE) {
+					builder.append((endPartTime - startPartTime) / 1000000 + ", ");
+				}
 			}
 
 			if (Settings.EXPORT_ONTOLOGIES) {
@@ -348,10 +415,10 @@ public class Partitioner {
 					failed.add(e.toAbsolutePath().toString() + " failed\n");
 				}
 				OntologyDescriptor.clearMemory();
-				GraphExporter.clearMemory();
+				//GraphExporter.clearMemory();
 				System.gc();
 			});
-			bw.write("/n");
+			bw.write("\n");
 			for (String failure : failed) {
 				bw.write(failure);
 			}
