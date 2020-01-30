@@ -1,4 +1,4 @@
-package uni.sasjonge.utils;
+package uni.sasjonge.partitioning;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.model.parameters.Imports;
@@ -13,7 +13,7 @@ public class SafetyChecker {
      *
      * @author Sascha Jongebloed
      */
-    public class SafetyVisitor implements OWLAxiomVisitor {
+    public static class SafetyVisitor implements OWLAxiomVisitor {
 
         boolean isSafe = true;
 
@@ -21,15 +21,6 @@ public class SafetyChecker {
             return isSafe;
         }
 
-        public SafetyVisitor(OWLOntology ontology) {
-            // Check safety of all logical axioms
-            ontology.logicalAxioms(Imports.INCLUDED).forEach(ax -> {
-
-                ax.accept(this);
-
-
-            });
-        }
 
         public void SafetyVisitor(OWLAxiom ax) {
             ax.accept(this);
@@ -77,7 +68,7 @@ public class SafetyChecker {
         }
     }
 
-    private class LocalityVisitor implements OWLClassExpressionVisitor {
+    private static class LocalityVisitor implements OWLClassExpressionVisitor {
 
         boolean isLocal = true;
 
@@ -109,7 +100,7 @@ public class SafetyChecker {
 
         @Override
         public void visit(OWLObjectComplementOf ce) {
-            LocalityVisitor compl = new LocalityVisitor(ce);
+            LocalityVisitor compl = new LocalityVisitor(ce.getOperand());
             isLocal = !compl.isLocal;
         }
 
@@ -128,6 +119,7 @@ public class SafetyChecker {
             isLocal = true;
         }
 
+        // TODO: Min und Max Cardinality: Cardinality 0 -> non-local
         @Override
         public void visit(OWLObjectMinCardinality ce) {
             isLocal = true;
@@ -204,8 +196,12 @@ public class SafetyChecker {
         }
     }
 
-    public boolean isSafe(OWLOntology ontology) {
-        return (new SafetyVisitor(ontology)).isSafe();
+    public static boolean isSafe(OWLOntology ontology) {
 
+        return ontology.logicalAxioms(Imports.INCLUDED).anyMatch(ax -> {
+            SafetyVisitor sv = new SafetyVisitor();
+            ax.accept(sv);
+            return sv.isSafe;
+        });
     }
 }

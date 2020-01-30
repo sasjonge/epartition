@@ -1,4 +1,4 @@
-package uni.sasjonge.utils;
+package uni.sasjonge.dataanalyzing;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
@@ -24,12 +24,13 @@ public class UniversalRoleAnalyzer {
             List<String> failed = new LinkedList<>();
 
             // Save the statistics for the partitioning in a file
-            File fout = new File(Settings.EVALUATION_OUTPUT_FILE);
+            File fout = new File(Settings.ONTOLOGIES_DIRECTORY + "_universalrole.txt");
             FileOutputStream fos = new FileOutputStream(fout);
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-            bw.write("\\begin{table} \\caption {Syntax and semantic of \\SROIQD constructors~\\cite{KSH13,HS01}} \\label{tab:synAndSemOfSubCon} " +
-                    "\n \\begin{tabu} to \\textwidth {X[l]X[c]X[c2]} " +
-                    "\n Name & Syntax & Semantics \\ \\tabucline[1pt]{1-3})");
+            bw.write(
+                    "\n\\begin{longtabu} to \\textwidth {X[l3]X[c]X[c]X[c]} \n" +
+                            "\\caption{Universal Role statistics} \\label{tab:univstats} \\\\ \\hline \n" +
+                    "Name & Num. of logical axioms & Num. of axioms with univ. roles & Percentage \\\\ \\tabucline[1pt]{1-4}");
 
             Map<String, int[]> ontToData = new HashMap<>();
 
@@ -70,12 +71,12 @@ public class UniversalRoleAnalyzer {
 
             for (Map.Entry<String, int[]> e : list) {
                 if (e.getValue()[1] > 0) {
-                    bw.write(e.getKey() + " & " + e.getValue()[0] + " & " + e.getValue()[1] + " & " + e.getValue()[1] / e.getValue()[0] + "\\\\ \\hline" + "\n");
+                    bw.write(e.getKey() + " & " + e.getValue()[0] + " & " + e.getValue()[1] + " & " + String.format("%.3f",1- (e.getValue()[1] * 1.0) / (e.getValue()[0] * 1.0)) + "\\\\ " + "\n");
                     bw.flush();
                 }
             }
 
-            bw.write("\\end{tabu}" + "\\n" + "\\end{table}");
+            bw.write("\\end{longtabu}");
             bw.write("\n");
             for (String failure : failed) {
                 bw.write(failure);

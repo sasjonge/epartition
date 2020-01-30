@@ -14,9 +14,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.print.FlavorException;
-import javax.xml.transform.TransformerConfigurationException;
-
 import org.jgrapht.io.ExportException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.OWLXMLDocumentFormat;
@@ -28,20 +25,17 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
-import org.semanticweb.owlapi.model.OWLPrimitive;
 import org.semanticweb.owlapi.model.parameters.OntologyCopy;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
-import org.semanticweb.owlapi.util.DLExpressivityChecker;
-import org.semanticweb.owlapi.util.OWLEntityRemover;
-import org.xml.sax.SAXException;
 
 import uni.sasjonge.heuristics.levelreducer.OntologyLevelReducer;
 import uni.sasjonge.heuristics.upperlevel.UpperLevelManager;
 import uni.sasjonge.partitioning.PartitioningCore;
 import uni.sasjonge.utils.GraphExporter;
 import uni.sasjonge.utils.OntologyDescriptor;
+import uni.sasjonge.partitioning.SafetyChecker;
 
 /**
  * 
@@ -60,6 +54,7 @@ public class Partitioner {
 	OWLDataFactory df;
 	StringBuilder builder;
 	List<OWLOntology> partitionedOntologies;
+	int sizeOfOriginalOntology = 0;
 
 	public void loadOntology(String input_ontology) {
 
@@ -92,6 +87,7 @@ public class Partitioner {
 			// Load the input ontology
 			long loadStartTime = System.nanoTime();
 			OWLOntology loadedOnt = manager.loadOntology(IRI.create("file:" + input_ontology));
+			sizeOfOriginalOntology = loadedOnt.getLogicalAxiomCount();
 
 			// if rdfs:labels are used as name, map them
 			if (Settings.USE_RDF_LABEL) {
@@ -132,7 +128,13 @@ public class Partitioner {
 				}
 			}
 
-			//SafetyChecker.check
+			// Check for safety
+			if (!Settings.IGNORE_SAFETY_CHECK) {
+				if (!SafetyChecker.isSafe(loadedOnt)) {
+					builder = new StringBuilder(input_ontology + " is not safe");
+					return;
+				}
+			}
 
 			long expressEndTime = System.nanoTime();
 			System.out.println("Checking expressivity took " + (expressEndTime - expressStartTime) / 1000000 + "ms");
@@ -289,7 +291,7 @@ public class Partitioner {
 			// Export the graph
 			long startGraphTime = System.nanoTime();
 			// Initiate the graphexporter (create the hierachy and descriptors)
-			GraphExporter.init(oldOntology);
+			//GraphExporter.init(oldOntology);
 
 			// Choose type of output graph
 			switch (Settings.OUTPUT_GRAPH_TYPE) {
@@ -320,7 +322,14 @@ public class Partitioner {
 			System.out.println("Overall: " + (endTime - startTime) / 1000000 + "ms");
 			if (Settings.EVALUATE) {
 				builder.append((endTime - startTime) / 1000000 + ", ");
-				builder.append(String.format("%.2f", (getPercentageOfLargestPart(partitionedOntologies) * 100)) + ", ");
+				if (Settings.USE_OLH || Settings.USE_OLH_AFTER || Settings.USE_BH || Settings.USE_CD || Settings.USE_ULH)
+				{
+					builder.append(((int) getHeuristicsAxiomValues(partitionedOntologies)[0]) + ", "
+							+ getHeuristicsAxiomValues(partitionedOntologies)[1] + ", ");
+				}
+				double[] biggestPartStats = getPercentageOfLargestPart(partitionedOntologies);
+				builder.append((biggestPartStats[0]) + ", ");
+				builder.append(String.format("%.2f", (biggestPartStats[1] * 100)) + ", ");
 				builder.append(partitionedOntologies.size());
 			}
 
@@ -354,9 +363,9 @@ public class Partitioner {
 	/**
 	 * Calculates the percentage of the biggest partition
 	 * @param partitionedOntologies
-	 * @return
+	 * @return A array of [Size of biggest part.,percentage of biggest part]
 	 */
-	public double getPercentageOfLargestPart(List<OWLOntology> partitionedOntologies) {
+	public double[] getPercentageOfLargestPart(List<OWLOntology> partitionedOntologies) {
 		int biggestSize = 0;
 		int overallAxioms = 0;
 		for (OWLOntology ont : partitionedOntologies) {
@@ -367,7 +376,23 @@ public class Partitioner {
 			overallAxioms = overallAxioms + logAxiomsOfThisOnt;
 		}
 
-		return overallAxioms > 0 ? ((double) biggestSize) / ((double) overallAxioms) : 1.0d;
+		return new double[]{(double) biggestSize,overallAxioms > 0 ? ((double) biggestSize) / ((double) overallAxioms) : 1.0d};
+	}
+
+	/**
+	 *
+	 * @return Array of the form [Removed Axioms, Original Size]
+	 * @param partitionedOntologies
+	 */
+	public double[] getHeuristicsAxiomValues(List<OWLOntology> partitionedOntologies) {
+		int numOfAxiomsAfterHeuristics = 0;
+		for (OWLOntology ont : partitionedOntologies) {
+			numOfAxiomsAfterHeuristics += ont.getLogicalAxiomCount();
+		}
+
+		int removedAxiomCount = sizeOfOriginalOntology - numOfAxiomsAfterHeuristics;
+
+		return new double[]{removedAxiomCount, ((double) removedAxiomCount) / ((double) sizeOfOriginalOntology)};
 	}
 
 	public static void main(String[] args) {
@@ -382,7 +407,10 @@ public class Partitioner {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 			bw.write("Name, Num. of Axioms, Initiating classes (ms), Loading the Ontology (ms), " +
 					"Handle Universal Roles (ms), Copy Ontology (ms), Heuristics (ms), Partitioning Algorithm (ms), " +
-					(Settings.EXPORT_ONTOLOGIES ? "Exporting Ontologies (ms)," : "") + "Export Graph (ms), Overall (ms), Perc. of biggest Part, Number of Part\n");
+					(Settings.EXPORT_ONTOLOGIES ? "Exporting Ontologies (ms)," : "") + "Export Graph (ms), Overall (ms), " +
+							((Settings.USE_OLH || Settings.USE_OLH_AFTER || Settings.USE_BH || Settings.USE_CD || Settings.USE_ULH) ?
+									"Removed Axioms, Perc. of removed Axioms, " : "") +
+					"Size of biggest Part., Perc. of biggest Part., Number of Part\n");
 
 			paths.filter(Files::isRegularFile).forEach(e -> {
 				try {

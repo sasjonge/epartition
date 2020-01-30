@@ -19,12 +19,12 @@ public class Settings {
 
 	// ----------------------- GRAPH OUTPUT ------------------------------------
 	// The output path for the graph
-	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/bioportal2";
+	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
 
 	// The type of the output graph:
 	// 0 = Partition structure graph
 	// 1 = Constraint graph
-	public static final int OUTPUT_GRAPH_TYPE = 0;
+	public static final int OUTPUT_GRAPH_TYPE = 2;
 	
 	// For the constraint graph
 	// Should axioms be shown in the labels?
@@ -69,10 +69,13 @@ public class Settings {
 	
 	// How to handle universal roles
 	// - do we even want to handle them? if false, the tool refuses universal roles
-	public static final boolean HANDLE_UNIVERSAL_ROLES = false;
+	public static final boolean HANDLE_UNIVERSAL_ROLES = true;
 	// - if true, we can set a treshold to which point the program 
-	public static final int UNIVERAL_ROLES_TRESHOLD = 8;
-	
+	public static final int UNIVERAL_ROLES_TRESHOLD = 3;
+
+	// Ignore safety check
+	public static final boolean IGNORE_SAFETY_CHECK = false;
+
 	// Should the removed axioms be printed?
 	public static final boolean PRINT_REMOVED_AXIOMS = true;
 	
@@ -80,7 +83,7 @@ public class Settings {
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
 	public static boolean USE_OLH = true;
 	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int OLH_LAYERS_TO_REMOVE = 1;
+	public static final int OLH_LAYERS_TO_REMOVE = 3;
 
 	// Alternative (or addition): OLH on biggest component after partitioning
 	public static boolean USE_OLH_AFTER = false;
