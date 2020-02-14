@@ -21,7 +21,9 @@ import javax.swing.plaf.basic.BasicInternalFrameTitlePane.CloseAction;
 import javax.xml.transform.TransformerConfigurationException;
 
 import org.jgrapht.Graph;
+import org.jgrapht.GraphPath;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
@@ -306,6 +308,16 @@ public class PartitioningCore {
         // to)
         connectUnLabelledCCToBiggest(g, ccWithLabel, ccWithoutLabel);
 
+        // TOREMOVE: Check of shortest path between Physical Force and Organism in SNOMED
+        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
+        GraphPath<String, DefaultEdge> path = dij.getPath("Procedure (procedure)", "Substance (substance)");
+        GraphPath<String, DefaultEdge> path2 = dij.getPath("Substance (substance)", "Clinical finding (finding)");
+        GraphPath<String, DefaultEdge> path3 = dij.getPath("Procedure (procedure)", "Clinical finding (finding)");
+
+        System.out.println(path == null? "No path between physical force and organism" : path.toString());
+        System.out.println(path2 == null? "No path between organism and disease" : path2.toString());
+        System.out.println(path3 == null? "No path between physical force and disease" : path3.toString());
+
         long ccStartTime = System.nanoTime();
         // Find the connected components
         ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
@@ -320,7 +332,6 @@ public class PartitioningCore {
                 addNonLogicalAxiomEdges(ontology, ax);
             }
         });
-
 
         // Create the new ontologies (if flag is set, that we need them for the output)
         toReturn = createOntologyFromCC(ci.connectedSets(), ontology);
