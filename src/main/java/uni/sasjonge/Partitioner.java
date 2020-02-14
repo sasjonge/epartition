@@ -291,7 +291,7 @@ public class Partitioner {
 			// Export the graph
 			long startGraphTime = System.nanoTime();
 			// Initiate the graphexporter (create the hierachy and descriptors)
-			//GraphExporter.init(oldOntology);
+			GraphExporter.init(oldOntology);
 
 			// Choose type of output graph
 			switch (Settings.OUTPUT_GRAPH_TYPE) {

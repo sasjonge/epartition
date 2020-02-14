@@ -24,7 +24,7 @@ public class Settings {
 	// The type of the output graph:
 	// 0 = Partition structure graph
 	// 1 = Constraint graph
-	public static final int OUTPUT_GRAPH_TYPE = 2;
+	public static final int OUTPUT_GRAPH_TYPE = 0;
 	
 	// For the constraint graph
 	// Should axioms be shown in the labels?
@@ -81,14 +81,14 @@ public class Settings {
 	
 	// -------------- Settings for heuristics -----------------
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static boolean USE_OLH = true;
+	public static boolean USE_OLH = false;
 	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int OLH_LAYERS_TO_REMOVE = 3;
+	public static final int OLH_LAYERS_TO_REMOVE = 1;
 
 	// Alternative (or addition): OLH on biggest component after partitioning
 	public static boolean USE_OLH_AFTER = false;
 	// How many repetitions of this heuristic (one level is removed in every step)
-	public static int OLH_AFTER_REPETITIONS = 4;
+	public static int OLH_AFTER_REPETITIONS = 1;
 	// Minimal portion of ontology to repeat the heuristic
 	public static double OLH_AFTER_TRESHHOLD = 0.9;
 	
