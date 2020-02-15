@@ -1,6 +1,8 @@
 package uni.sasjonge;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * Helper class to store settings like pathes, output format, parameters for heuristics, etc.
@@ -80,8 +82,29 @@ public class Settings {
 	public static final boolean PRINT_REMOVED_AXIOMS = true;
 	
 	// -------------- Settings for heuristics -----------------
+	// ----------- Ignore Properties Heuristic (IPH) ----------
+	public static boolean USE_IPH = true;
+
+	public static HashSet<String> GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
+			"Associated with (attribute)",
+			"Causative agent (attribute)",
+			"Due to (attribute)",
+			"Temporally related to (attribute)",
+			"After (attribute)",
+			"Before (attribute)",
+			"During (attribute)",
+			"Characterizes (attribute)"
+
+	}));
+
+	public static HashSet<String> DOMAIN_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
+			"Role group (attribute)"
+	}));
+
+	public static HashSet<String> RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
+	}));
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static boolean USE_OLH = false;
+	public static boolean USE_OLH = true;
 	// Number of "layers" to remove in the OntologyLevelReducer
 	public static final int OLH_LAYERS_TO_REMOVE = 1;
 
