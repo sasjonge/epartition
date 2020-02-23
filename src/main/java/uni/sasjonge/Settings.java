@@ -41,7 +41,7 @@ public class Settings {
 
 	// Number of class labels on a node
 	// Max number of "Groups" to be shown
-	public static final int NUM_OF_CLASS_LABELS_TOPLEVEL = 6;
+	public static final int NUM_OF_CLASS_LABELS_TOPLEVEL = 13;
 	// Max number of classes per group
 	public static final int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
 	
@@ -102,6 +102,12 @@ public class Settings {
 	}));
 
 	public static HashSet<String> RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
+			"Has focus (attribute)",
+			"Component (attribute)",
+			"Process output (attribute)",
+			"Inheres in (attribute)",
+			"Precondition (attribute)", // Connects Qualifier Value and Even
+			"Specimen source identity (attribute)" // Occupation, environment, physical object
 	}));
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
 	public static boolean USE_OLH = true;

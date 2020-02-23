@@ -189,7 +189,7 @@ public class PartitioningCore {
         // Add the Vertexes to our defined algorithm
         // Vertex: ObjectProperties
         ontology.objectPropertiesInSignature(Imports.fromBoolean(true)).forEach(objProp -> {
-            if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
+            if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity() && !globalProp.contains(objProp)) {
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_0_DESIGNATOR);
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_1_DESIGNATOR);
             }
@@ -330,31 +330,48 @@ public class PartitioningCore {
         connectUnLabelledCCToBiggest(g, ccWithLabel, ccWithoutLabel);
 
         // TOREMOVE: Check of shortest path between Physical Force and Organism in SNOMED
-//        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
-//        String conA = "Procedure (procedure)";
-//        String conB = "Substance (substance)";
-//        String conC = "Clinical finding (finding)";
-//        GraphPath<String, DefaultEdge> path = dij.getPath(conA, conB);
-//        GraphPath<String, DefaultEdge> path2 = dij.getPath(conB, conC);
-//        GraphPath<String, DefaultEdge> path3 = dij.getPath(conA, conC);
-//
-//        System.out.println("-----------------------------------------------");
-//        System.out.println("Path  between " + conA + " and " + conB + ":");
-//        System.out.println(path == null ? "None" : path.toString());
-//        for (DefaultEdge e : path.getEdgeList()) {
-//            System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-//        }
-//        System.out.println("-----------------------------------------------");
-//        System.out.println(path2 == null ? "None" : path2.toString());
-//        for (DefaultEdge e : path.getEdgeList()) {
-//            System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-//        }
-//        System.out.println("-----------------------------------------------");
-//        System.out.println(path3 == null ? "None" : path3.toString());
-//        for (DefaultEdge e : path.getEdgeList()) {
-//            System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-//        }
-//        System.out.println("-----------------------------------------------");
+        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
+        String conA = "Physical object (physical object)";
+        String conB = "Cellular blood product, human (product)";
+        String conC = "Physical object (physical object)";
+        GraphPath<String, DefaultEdge> path = dij.getPath(conA, conB);
+        GraphPath<String, DefaultEdge> path2 = dij.getPath(conB, conC);
+        GraphPath<String, DefaultEdge> path3 = dij.getPath(conA, conC);
+
+        System.out.println("-----------------------------------------------");
+        System.out.println("Path  between " + conA + " and " + conB + ":");
+        System.out.println(path == null ? "None" : path.toString());
+        if (path != null) {
+            for (DefaultEdge e : path.getEdgeList()) {
+                if (createdByAxioms.containsKey(e)) {
+                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+                }
+            }
+        }
+        System.out.println("-----------------------------------------------");
+
+        System.out.println("Path  between " + conB + " and " + conC + ":");
+        System.out.println(path2 == null ? "None" : path2.toString());
+        if (path2 != null) {
+
+            for (DefaultEdge e : path2.getEdgeList()) {
+                if (createdByAxioms.containsKey(e)) {
+                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+                }
+            }
+        }
+        System.out.println("-----------------------------------------------");
+        System.out.println("Path  between " + conA + " and " + conC + ":");
+        System.out.println(path3 == null ? "None" : path3.toString());
+        if (path3 != null) {
+
+            for (DefaultEdge e : path3.getEdgeList()) {
+                if (createdByAxioms.containsKey(e)) {
+                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+                }
+            }
+            System.out.println("-----------------------------------------------");
+        }
         // TOREMOVE: END
 
         long ccStartTime = System.nanoTime();
@@ -586,8 +603,6 @@ public class PartitioningCore {
 
                         labelledEdge = getLabelledEdge(ax, labelledEdge, edge);
                     }
-                } else if (!domainGlobalProp.contains(subProp.getNamedProperty())) {
-                    labelledEdge = createLoopEdge(g, vertexSubPropZero);
                 }
 
                 break;
@@ -602,7 +617,7 @@ public class PartitioningCore {
                 DefaultEdge edge = null;
                 if (!globalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
                     if (!domainGlobalProp.contains(propertyChain.get(0).getNamedProperty())
-                        && !domainGlobalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
+                            && !domainGlobalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
                         labelledEdge = addEdgeHelp(g, vertexPropChain0, superProp2);
                     }
 
@@ -620,7 +635,10 @@ public class PartitioningCore {
                 // propertychain has the form (...,R,S,...)
                 for (int k = 0; k < chainLength - 1; k++) {
                     DefaultEdge edge1 = null;
-                    if (!rangeGlobalProp.contains(propertyChain.get(k).getNamedProperty()) && !domainGlobalProp.contains(propertyChain.get(k + 1))) {
+                    if (!globalProp.contains(propertyChain.get(k).getNamedProperty())
+                            && !rangeGlobalProp.contains(propertyChain.get(k).getNamedProperty())
+                            && !globalProp.contains(propertyChain.get(k + 1).getNamedProperty())
+                            && !domainGlobalProp.contains(propertyChain.get(k + 1))) {
                         edge1 = addEdgeHelp(g, getPropertyVertex(propertyChain.get(k), 1),
                                 getPropertyVertex(propertyChain.get(k + 1), 0));
                     }
@@ -711,8 +729,10 @@ public class PartitioningCore {
             case "InverseFunctionalObjectProperty":
                 // In this case we only need to label a vertex with this axiom
                 OWLObjectPropertyExpression propAx = ((OWLObjectPropertyCharacteristicAxiom) ax).getProperty();
-                labelledEdge = createLoopEdge(g,
-                        getPropertyVertex(propAx, 0));
+                if (!globalProp.contains(propAx.getNamedProperty())) {
+                    labelledEdge = createLoopEdge(g,
+                            getPropertyVertex(propAx, 0));
+                }
                 break;
 
             case "ReflexiveObjectProperty":
@@ -722,8 +742,10 @@ public class PartitioningCore {
             case "TransitiveObjectProperty":
                 OWLObjectPropertyCharacteristicAxiom propax = (OWLObjectPropertyCharacteristicAxiom) ax;
                 // In this cases we need to connect R0 and R1
-                labelledEdge = addEdgeHelp(g, getPropertyVertex(propax.getProperty(), 0),
-                        getPropertyVertex(propax.getProperty(), 1));
+                if (!globalProp.contains(propax.getProperty().getNamedProperty())) {
+                    labelledEdge = addEdgeHelp(g, getPropertyVertex(propax.getProperty(), 0),
+                            getPropertyVertex(propax.getProperty(), 1));
+                }
                 break;
 
             // ------------------- Data Property Axioms --------------------
@@ -961,7 +983,7 @@ public class PartitioningCore {
             case "Declaration":
                 OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
                 OWLEntity entity = decl.getEntity();
-                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty())) {
+                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty()) && !globalProp.contains(entity.asOWLObjectProperty())) {
                     edge = createLoopEdge(g,
                             OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()) + Settings.PROPERTY_0_DESIGNATOR);
                 } else if (!entity.isTopEntity() && (entity.isOWLClass() || entity.isOWLNamedIndividual())) {
@@ -970,7 +992,7 @@ public class PartitioningCore {
                     }
                 } else if (entity.isOWLAnnotationProperty()) {
 
-                } else if (!entity.isTopEntity()){
+                } else if (!entity.isTopEntity()) {
                     System.err.println("Missing declaration type: " + decl.toString());
                 }
                 break;
