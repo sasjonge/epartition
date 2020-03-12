@@ -19,12 +19,12 @@ public class UniversalRoleAnalyzer {
 
     public static void main(String[] args) {
         // Read all files in the given directory
-        try (Stream<Path> paths = Files.walk(Paths.get(Settings.ONTOLOGIES_DIRECTORY))) {
+        try (Stream<Path> paths = Files.walk(Paths.get(Settings.INPUT_DIRECTORY))) {
 
             List<String> failed = new LinkedList<>();
 
             // Save the statistics for the partitioning in a file
-            File fout = new File(Settings.ONTOLOGIES_DIRECTORY + "_universalrole.txt");
+            File fout = new File(Settings.INPUT_DIRECTORY + "_universalrole.txt");
             FileOutputStream fos = new FileOutputStream(fout);
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
             bw.write(

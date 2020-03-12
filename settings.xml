@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment/>
+<entry key="use_cd">false</entry>
+<entry key="cd_weight_for_non_axiom_edges">3</entry>
+<entry key="print_removed_axioms">true</entry>
+<entry key="global_properties">[Before (attribute), After (attribute), Due to (attribute), Associated with (attribute), Temporally related to (attribute), Characterizes (attribute), During (attribute), Causative agent (attribute)]</entry>
+<entry key="number_of_property_labels_vertex_toplevel">33</entry>
+<entry key="output_graph_type">0</entry>
+<entry key="number_of_indiv_labels">3</entry>
+<entry key="use_ulh">false</entry>
+<entry key="universal_role_treshhold">3</entry>
+<entry key="handle_universal_roles">true</entry>
+<entry key="olh_after_repetitions">1</entry>
+<entry key="range_global_properties">[Component (attribute), Process output (attribute), Inheres in (attribute), Has focus (attribute), Specimen source identity (attribute), Precondition (attribute)]</entry>
+<entry key="evaluation_output_file">/home/sascha/Desktop/onts_statistics.xml</entry>
+<entry key="use_iph">true</entry>
+<entry key="rdf_label_lang">en</entry>
+<entry key="use_bh">false</entry>
+<entry key="number_of_class_labels_sublevel">4</entry>
+<entry key="use_rdf_label">true</entry>
+<entry key="bh_number_of_axiom_labels">1</entry>
+<entry key="show_axioms">true</entry>
+<entry key="eval_runs">false</entry>
+<entry key="number_of_property_labels_edge">34</entry>
+<entry key="upper_level_file">/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json</entry>
+<entry key="property_0_designator">[0]</entry>
+<entry key="ulh_removal_treshhold">0.9</entry>
+<entry key="number_of_class_labels_toplevel">13</entry>
+<entry key="use_olh_after">false</entry>
+<entry key="ontology_output_path+">/home/sascha/Desktop/out/</entry>
+<entry key="evaluate">true</entry>
+<entry key="olh_after_treshhold">0.9</entry>
+<entry key="cd_resolution_at_start">1.0</entry>
+<entry key="number_of_property_labels_vertex_sublevel">3</entry>
+<entry key="cd_leiden">true</entry>
+<entry key="graph_output_path">/home/sascha/Desktop/graphs/</entry>
+<entry key="bh_number_of_repetitions_of_heuristic">1</entry>
+<entry key="number_of_runs">5</entry>
+<entry key="axiom_count">3</entry>
+<entry key="use_olh">false</entry>
+<entry key="olh_layers_to_remove">1</entry>
+<entry key="input_directory">/home/sascha/Desktop/onts</entry>
+<entry key="domain_global_properties">[Role group (attribute)]</entry>
+<entry key="export_ontologies">true</entry>
+<entry key="cd_resolution_decrease">0.75</entry>
+<entry key="max_olh_layer">8</entry>
+<entry key="property_1_designator">[1]</entry>
+</properties>

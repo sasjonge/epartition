@@ -1,8 +1,10 @@
 package uni.sasjonge;
 
-import java.net.URI;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Properties;
 
 /**
  * Helper class to store settings like pathes, output format, parameters for heuristics, etc.
@@ -13,52 +15,62 @@ public class Settings {
 	
 	// -------------------------- INPUT ONTOLOGIES -----------------------------
 	// The input directory where the .owl files should be
-	public static final String ONTOLOGIES_DIRECTORY = "/home/sascha/Desktop/onts";
+	public static String INPUT_DIRECTORY = "/home/sascha/Desktop/onts";
 
 	// ---------------------- Evaluation Data Output --------------------------
-	public static final boolean EVALUATE = true;
-	public static final String EVALUATION_OUTPUT_FILE = ONTOLOGIES_DIRECTORY + "_statistics.xml";
+	// Is this a evaluation run?
+	public static boolean EVALUATE = true;
+	// Output path for the evaluation statistics
+	public static String EVALUATION_OUTPUT_FILE = INPUT_DIRECTORY + "_statistics.xml";
+
+	// If we want multiple runs for each ontolgy
+	// We take the average of the statistics the runs (removing the highest and lowest statistic)
+	public static boolean EVAL_RUN = false;
+	public static int NUMBER_OF_RUNS = 5;
+
+	// For the OLH statistic: Start the evaluation new with an increased number of layers
+	//that will beremoved
+	public static int MAX_OLH_LAYER = 8;
 
 	// ----------------------- GRAPH OUTPUT ------------------------------------
 	// The output path for the graph
-	public static final String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
+	public static String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
 
 	// The type of the output graph:
 	// 0 = Partition structure graph
 	// 1 = Constraint graph
-	public static final int OUTPUT_GRAPH_TYPE = 0;
+	public static int OUTPUT_GRAPH_TYPE = 0;
 	
 	// For the constraint graph
 	// Should axioms be shown in the labels?
-	public static final boolean SHOW_AXIOMS = true;
+	public static boolean SHOW_AXIOMS = true;
 	// If yes, how many?
-	public static final int AXIOM_COUNT = 3;
+	public static int AXIOM_COUNT = 3;
 	
 	// How many individual labels should be shown
-	public static final int NUM_OF_INDIV_LABELS = 3;
+	public static int NUM_OF_INDIV_LABELS = 3;
 	// Number of properties on a edge
-	public static final int NUM_OF_PROPERTY_LABELS_EDGE = 4;
+	public static int NUM_OF_PROPERTY_LABELS_EDGE = 34;
 
 	// Number of class labels on a node
 	// Max number of "Groups" to be shown
-	public static final int NUM_OF_CLASS_LABELS_TOPLEVEL = 13;
+	public static int NUM_OF_CLASS_LABELS_TOPLEVEL = 13;
 	// Max number of classes per group
-	public static final int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
+	public static int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
 	
 	// Number of property labels on a node
 	// Max number of "Groups" to be shown
-	public static final int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 3;
+	public static int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 33;
 	// Max number of classes per group
-	public static final int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
-
+	public static int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
 
 	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
 	// The output path for the graph
-	public static final String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
+	public static String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
 
 	// Should the created partitions exported as owl?
-	public static boolean EXPORT_ONTOLOGIES = false;
-	
+	public static boolean EXPORT_ONTOLOGIES = true;
+
 	// ------- Settings for the default partitioner ----------
 	
 	// Handling of RDF labels as names and the used lang 
@@ -85,6 +97,7 @@ public class Settings {
 	// ----------- Ignore Properties Heuristic (IPH) ----------
 	public static boolean USE_IPH = true;
 
+	// Properties that are used global (in several topics) (in domain and range)
 	public static HashSet<String> GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
 			"Associated with (attribute)",
 			"Causative agent (attribute)",
@@ -97,10 +110,12 @@ public class Settings {
 
 	}));
 
+	// Properties that are used global in their domain
 	public static HashSet<String> DOMAIN_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
 			"Role group (attribute)"
 	}));
 
+	// Properties that are used global in their range
 	public static HashSet<String> RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
 			"Has focus (attribute)",
 			"Component (attribute)",
@@ -109,10 +124,11 @@ public class Settings {
 			"Precondition (attribute)", // Connects Qualifier Value and Even
 			"Specimen source identity (attribute)" // Occupation, environment, physical object
 	}));
+
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
-	public static boolean USE_OLH = true;
+	public static boolean USE_OLH = false;
 	// Number of "layers" to remove in the OntologyLevelReducer
-	public static final int OLH_LAYERS_TO_REMOVE = 1;
+	public static int OLH_LAYERS_TO_REMOVE = 1;
 
 	// Alternative (or addition): OLH on biggest component after partitioning
 	public static boolean USE_OLH_AFTER = false;
@@ -146,5 +162,61 @@ public class Settings {
 	// Treshhold for how many percent of the upper level ontology the given ontology can contain,
 	// before it's removed
 	public static final double ULH_REMOVAL_TRESHHOLD = 0.9d;
+
+	public static void readSettingsFile(String pathToSettings) {
+		Properties props = new Properties();
+
+		try {
+			props.loadFromXML(new FileInputStream(pathToSettings));
+
+			Settings.INPUT_DIRECTORY = props.getProperty("input_directory");
+			Settings.EVALUATE = props.getProperty("evaluate").equals("true") ? true : false;
+			Settings.EVALUATION_OUTPUT_FILE = props.getProperty("evaluation_output_file");
+			Settings.EVAL_RUN = props.getProperty("eval_runs").equals("true") ? true : false;
+			Settings.NUMBER_OF_RUNS = Integer.parseInt(props.getProperty("number_of_runs");
+			Settings.MAX_OLH_LAYER = Integer.parseInt(props.getProperty("max_olh_layer"));
+			Settings.GRAPH_OUTPUT_PATH =props.getProperty("graph_output_path",GRAPH_OUTPUT_PATH);
+			Settings.OUTPUT_GRAPH_TYPE = Integer.parseInt(props.getProperty("output_graph_type"));
+			Settings.SHOW_AXIOMS = props.getProperty("show_axioms").equals("true") ? true : false;
+			Settings.AXIOM_COUNT = Integer.parseInt(props.getProperty("axiom_count"));
+			Settings.NUM_OF_INDIV_LABELS = Integer.parseInt(props.getProperty("number_of_indiv_labels"));
+			Settings.NUM_OF_PROPERTY_LABELS_EDGE = Integer.parseInt(props.getProperty("number_of_property_labels_edge"));
+			Settings.NUM_OF_CLASS_LABELS_TOPLEVEL = Integer.parseInt(props.getProperty("number_of_class_labels_toplevel"));
+			Settings.NUM_OF_CLASS_LABELS_SUBLEVEL = Integer.parseInt(props.getProperty("number_of_class_labels_sublevel"));
+			Settings.NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = Integer.parseInt(props.getProperty("number_of_property_labels_vertex_toplevel"));
+			Settings.NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = Integer.parseInt(props.getProperty("number_of_property_labels_vertex_sublevel"));
+			Settings.ONOTOLOGY_OUTPUT_PATH = props.getProperty("ontology_output_path+");
+			Settings.EXPORT_ONTOLOGIES = props.getProperty("export_ontologies") ? ""true"" : false;
+			props.getProperty("use_rdf_label");
+			props.getProperty("rdf_label_lang");
+			props.getProperty("property_0_designator");
+			props.getProperty("property_1_designator");
+			props.getProperty("handle_universal_roles");
+			props.getProperty("universal_role_treshhold");
+			props.getProperty("print_removed_axioms");
+			props.getProperty("use_iph",USE_IPH+"");
+			props.getProperty("global_properties");
+			props.getProperty("domain_global_properties");
+			props.getProperty("range_global_properties");
+			props.getProperty("use_olh");
+			props.getProperty("olh_layers_to_remove");
+			props.getProperty("use_olh_after");
+			props.getProperty("olh_after_repetitions");
+			props.getProperty("olh_after_treshhold");
+			props.getProperty("use_bh");
+			props.getProperty("bh_number_of_axiom_labels");
+			props.getProperty("bh_number_of_repetitions_of_heuristic");
+			props.getProperty("use_cd");
+			props.getProperty("cd_leiden");
+			props.getProperty("cd_weight_for_non_axiom_edges");
+			props.getProperty("cd_resolution_at_start");
+			props.getProperty("cd_resolution_decrease");
+			props.getProperty("use_ulh");
+			props.getProperty("upper_level_file");
+			props.getProperty("ulh_removal_treshhold");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 }

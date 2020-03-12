@@ -330,48 +330,48 @@ public class PartitioningCore {
         connectUnLabelledCCToBiggest(g, ccWithLabel, ccWithoutLabel);
 
         // TOREMOVE: Check of shortest path between Physical Force and Organism in SNOMED
-        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
-        String conA = "Physical object (physical object)";
-        String conB = "Cellular blood product, human (product)";
-        String conC = "Physical object (physical object)";
-        GraphPath<String, DefaultEdge> path = dij.getPath(conA, conB);
-        GraphPath<String, DefaultEdge> path2 = dij.getPath(conB, conC);
-        GraphPath<String, DefaultEdge> path3 = dij.getPath(conA, conC);
-
-        System.out.println("-----------------------------------------------");
-        System.out.println("Path  between " + conA + " and " + conB + ":");
-        System.out.println(path == null ? "None" : path.toString());
-        if (path != null) {
-            for (DefaultEdge e : path.getEdgeList()) {
-                if (createdByAxioms.containsKey(e)) {
-                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-                }
-            }
-        }
-        System.out.println("-----------------------------------------------");
-
-        System.out.println("Path  between " + conB + " and " + conC + ":");
-        System.out.println(path2 == null ? "None" : path2.toString());
-        if (path2 != null) {
-
-            for (DefaultEdge e : path2.getEdgeList()) {
-                if (createdByAxioms.containsKey(e)) {
-                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-                }
-            }
-        }
-        System.out.println("-----------------------------------------------");
-        System.out.println("Path  between " + conA + " and " + conC + ":");
-        System.out.println(path3 == null ? "None" : path3.toString());
-        if (path3 != null) {
-
-            for (DefaultEdge e : path3.getEdgeList()) {
-                if (createdByAxioms.containsKey(e)) {
-                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
-                }
-            }
-            System.out.println("-----------------------------------------------");
-        }
+//        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
+//        String conA = "Physical object (physical object)";
+//        String conB = "Cellular blood product, human (product)";
+//        String conC = "Physical object (physical object)";
+//        GraphPath<String, DefaultEdge> path = dij.getPath(conA, conB);
+//        GraphPath<String, DefaultEdge> path2 = dij.getPath(conB, conC);
+//        GraphPath<String, DefaultEdge> path3 = dij.getPath(conA, conC);
+//
+//        System.out.println("-----------------------------------------------");
+//        System.out.println("Path  between " + conA + " and " + conB + ":");
+//        System.out.println(path == null ? "None" : path.toString());
+//        if (path != null) {
+//            for (DefaultEdge e : path.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//        }
+//        System.out.println("-----------------------------------------------");
+//
+//        System.out.println("Path  between " + conB + " and " + conC + ":");
+//        System.out.println(path2 == null ? "None" : path2.toString());
+//        if (path2 != null) {
+//
+//            for (DefaultEdge e : path2.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//        }
+//        System.out.println("-----------------------------------------------");
+//        System.out.println("Path  between " + conA + " and " + conC + ":");
+//        System.out.println(path3 == null ? "None" : path3.toString());
+//        if (path3 != null) {
+//
+//            for (DefaultEdge e : path3.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//            System.out.println("-----------------------------------------------");
+//        }
         // TOREMOVE: END
 
         long ccStartTime = System.nanoTime();
@@ -977,13 +977,13 @@ public class PartitioningCore {
                     edgeToAxioms.get(edgeReference.get()).addAll(annotToAxioms.get(annot.getProperty()));
                 }
 
-                //edge = edgeReference.get();
+                edge = edgeReference.get();
                 break;
 
             case "Declaration":
                 OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
                 OWLEntity entity = decl.getEntity();
-                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty()) && !globalProp.contains(entity.asOWLObjectProperty())) {
+                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty()) && (entity.isOWLObjectProperty() && !globalProp.contains(entity.asOWLObjectProperty()))) {
                     edge = createLoopEdge(g,
                             OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()) + Settings.PROPERTY_0_DESIGNATOR);
                 } else if (!entity.isTopEntity() && (entity.isOWLClass() || entity.isOWLNamedIndividual())) {
@@ -1288,7 +1288,7 @@ public class PartitioningCore {
                         ont = manager.createOntology(axs);
 
                     } else {
-                        ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".ow"));
+                        ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".owl"));
                     }
                     toReturn.add(ont);
                     partitionNum++;
