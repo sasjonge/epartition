@@ -41,6 +41,11 @@ public class Partitioner {
     List<OWLOntology> partitionedOntologies;
     int sizeOfOriginalOntology = 0;
 
+    /**
+     * Loads the input ontology and partitons it
+     *
+     * @param input_ontology
+     */
     public void loadOntology(String input_ontology) {
 
         System.out.println("-----------------------------------------");
@@ -166,28 +171,38 @@ public class Partitioner {
             }
 
             // ---------------- Upper level remover version 2 ------------------
+            // -- Removes the version
             if (Settings.USE_OLH_AFTER) {
 
                 long startPreHeuristicTime = System.nanoTime();
                 // This part belongs to heuristic
                 long sumOfHeuristicTime = 0;
+                // Create an structural reasoner
                 reasonerFactory = new StructuralReasonerFactory();
+                // Get the siz of the old ontology
                 int sizeOfOldOnt = oldOntology.getLogicalAxiomCount();
 
+                // Falg if we want to repeat the step
                 boolean repeat = true;
 
+                // Number of the step
                 int step = 0;
 
                 long sumOfPartTime = System.nanoTime() - startPreHeuristicTime;
+
+                // While we want to repeat
                 while (repeat) {
 
                     long startPartTime = System.nanoTime();
 
+                    // Partition the ontology
                     partitionedOntologies = pc.partition(ontology);
 
                     sumOfPartTime += System.nanoTime() - startPartTime;
 
                     long startHeuristicTime = System.nanoTime();
+
+                    // Sorty the components by size
                     Collections.sort(partitionedOntologies, new Comparator<OWLOntology>() {
                         @Override
                         public int compare(OWLOntology ontology, OWLOntology t1) {
@@ -195,13 +210,15 @@ public class Partitioner {
                         }
                     });
 
+                    // Get the biggest ontology
                     OWLOntology biggest = partitionedOntologies.iterator().next();
 
+                    // If the biggest ontology exceeds the treshold and we haven't done enough steps till now
                     if (sizeOfOldOnt * Settings.OLH_AFTER_TRESHHOLD >= biggest.getLogicalAxiomCount() || step >= Settings.OLH_AFTER_REPETITIONS) {
+                        // If the biggest ontology exceeds the treshold
                         if (sizeOfOldOnt * Settings.OLH_AFTER_TRESHHOLD >= biggest.getLogicalAxiomCount()) {
                             System.out.println(sizeOfOldOnt + " bigger as " + biggest.getLogicalAxiomCount());
                         }
-                        System.out.println("!!!!!!!!!!!!! " + partitionedOntologies.size());
 
                         repeat = false;
                     } else {
@@ -429,6 +446,11 @@ public class Partitioner {
         return new double[]{removedAxiomCount, ((double) removedAxiomCount) / ((double) sizeOfOriginalOntology)};
     }
 
+    /**
+     * Runs the partitioner for several different layer level of the OLH and a specific number of times
+     * The highest and lowest result are removed from the statistic, and then they are averaged
+     * @param args
+     */
     public static void evalRun(String[] args) {
         // Read all files in the given directory
         try (Stream<Path> paths = Files.walk(Paths.get(Settings.INPUT_DIRECTORY))) {
@@ -436,7 +458,7 @@ public class Partitioner {
 
             List<String> failed = new LinkedList<>();
 
-            for (int i = 5; i < Settings.MAX_OLH_LAYER; i++) {
+            for (int i = Settings.OLH_LAYERS_TO_REMOVE; i < Settings.MAX_OLH_LAYER; i++) {
                 // Set OLH Layer
                 Settings.OLH_LAYERS_TO_REMOVE = i;
                 // Save the statistics for the partitioning in a file
@@ -531,6 +553,10 @@ public class Partitioner {
         }
     }
 
+    /**
+     * One simple run of the partitioner, without complex evaluation
+     * @param args
+     */
     public static void nonEvalRun(String[] args) {
         // Read all files in the given directory
         try (Stream<Path> paths = Files.walk(Paths.get(Settings.INPUT_DIRECTORY))) {
@@ -594,6 +620,149 @@ public class Partitioner {
 
     public static void main(String[] args) {
 
+        // Split for cmd options and proceed accordingly
+        for(String arg : args) {
+            String[] splittedArg = arg.substring(2,arg.length()).split("=");
+            if (splittedArg.length == 1) {
+                switch (splittedArg[0]) {
+                    case "evaluate":
+                        Settings.EVALUATE = true;
+                        break;
+                    case "eval_runs":
+                        Settings.EVAL_RUN = true;
+                        break;
+                    case "show_axioms":
+                        Settings.SHOW_AXIOMS = true;
+                        break;
+                    case "export_ontologies":
+                        Settings.EXPORT_ONTOLOGIES = true;
+                        break;
+                    case "use_rdf_label":
+                        Settings.USE_RDF_LABEL = true;
+                        break;
+                    case "ignore_safety_check":
+                        Settings.IGNORE_SAFETY_CHECK = true;
+                        break;
+                    case "print_removed_axioms":
+                        Settings.PRINT_REMOVED_AXIOMS = true;
+                        break;
+                    case "use_iph":
+                        Settings.USE_IPH = true;
+                        break;
+                    case "use_olh":
+                        Settings.USE_OLH = true;
+                        break;
+                    case "use_olh_after":
+                        Settings.USE_OLH_AFTER = true;
+                        break;
+                    case "use_bh":
+                        Settings.USE_BH = true;
+                        break;
+                    case "cd_leiden":
+                        Settings.CD_LEIDEN = true;
+                        break;
+                    case "use_ulh":
+                        Settings.USE_ULH = true;
+                    default:
+                        System.err.println(arg + " is an invalid argument");
+                        return;
+                }
+            } else if (splittedArg.length == 2) {
+                switch (splittedArg[0]) {
+                    case "input_directory":
+                        Settings.INPUT_DIRECTORY = splittedArg[1];
+                        break;
+                    case "evaluation_output_file":
+                        Settings.EVALUATION_OUTPUT_FILE = splittedArg[1];
+                        break;
+                    case "number_of_runs":
+                        Settings.NUMBER_OF_RUNS = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "max_olh_layer":
+                        Settings.MAX_OLH_LAYER = Integer.parseInt(splittedArg[1]);
+                    case "graph_output_path":
+                        Settings.INPUT_DIRECTORY = splittedArg[1];
+                        break;
+                    case "axiom_count":
+                        Settings.AXIOM_COUNT = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_indiv_labels":
+                        Settings.NUM_OF_INDIV_LABELS = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_property_labels_edge":
+                        Settings.NUM_OF_PROPERTY_LABELS_EDGE = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_class_labels_toplevel":
+                        Settings.NUM_OF_CLASS_LABELS_TOPLEVEL = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_class_labels_sublevel":
+                        Settings.NUM_OF_CLASS_LABELS_SUBLEVEL = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_property_labels_vertex_toplevel":
+                        Settings.NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "number_of_property_labels_vertex_sublevel":
+                        Settings.NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "ontology_output_path":
+                        Settings.ONOTOLOGY_OUTPUT_PATH = splittedArg[1];
+                        break;
+                    case "rdf_label_lang":
+                        Settings.lang = splittedArg[1];
+                        break;
+                    case "property_0_designator":
+                        Settings.PROPERTY_0_DESIGNATOR = splittedArg[1];
+                        break;
+                    case "property_1_designator":
+                        Settings.PROPERTY_1_DESIGNATOR = splittedArg[1];
+                        break;
+                    case "universal_role_treshhold":
+                        Settings.UNIVERAL_ROLES_TRESHOLD = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "global_properties":
+                        Settings.GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(splittedArg[1].substring(1, splittedArg[1].length() - 1).split(", ")));
+                        break;
+                    case "domain_global_properties":
+                        Settings.DOMAIN_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(splittedArg[1].substring(1, splittedArg[1].length() - 1).split(", ")));
+                        break;
+                    case "range_global_properties":
+                        Settings.RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(splittedArg[1].substring(1, splittedArg[1].length() - 1).split(", ")));
+                        break;
+                    case "olh_after_repetitions":
+                        Settings.OLH_AFTER_REPETITIONS = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "olh_after_treshhold":
+                        Settings.OLH_AFTER_TRESHHOLD = Double.parseDouble(splittedArg[1]);
+                        break;
+                    case "bh_number_of_axiom_labels":
+                        Settings.BH_NUM_OF_AXIOM_LABELS = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "bh_number_of_repetitions_of_heuristic":
+                        Settings.BH_NUM_OF_REPETITION_OF_HEURISTIC = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "cd_weight_for_non_axiom_edges":
+                        Settings.CD_WEIGHT_FOR_NON_AXIOM_EDGES = Integer.parseInt(splittedArg[1]);
+                        break;
+                    case "cd_resolution_at_start":
+                        Settings.CD_RESOLUTION_AT_START = Double.parseDouble(splittedArg[1]);
+                        break;
+                    case "cd_resolution_decrease":
+                        Settings.CD_RESOLUTION_DECREASE = Double.parseDouble(splittedArg[1]);
+                        break;
+                    case "upper_level_file":
+                        Settings.UPPER_LEVEL_FILE = splittedArg[1];
+                        break;
+                    case "ulh_removal_treshhold":
+                        Settings.ULH_REMOVAL_TRESHHOLD = Double.parseDouble(splittedArg[1]);
+                    default:
+                        System.err.println(arg + " is an invalid argument");
+                        return;
+                }
+            } else {
+                System.err.println(arg + " is an invalid argument");
+                return;
+            }
+        }
         // Split if we want to do several evaluation runs (to average the statistics)
         if (Settings.EVAL_RUN) {
             evalRun(args);

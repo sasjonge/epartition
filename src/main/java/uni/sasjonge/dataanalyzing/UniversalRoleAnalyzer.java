@@ -15,6 +15,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Tool to analyze the occurence axioms containing universal roles
+ * for all ontologies in a directory
+ */
 public class UniversalRoleAnalyzer {
 
     public static void main(String[] args) {

@@ -406,8 +406,7 @@ public class PartitioningCore {
 
         switch (expr.getClassExpressionType()) {
 
-            // ------------------------------ Object Restrictions
-            // ---------------------------
+            // ------------------------------ Object Restrictions ---------------------------
 
             // ObjectComplementOf
             case OBJECT_COMPLEMENT_OF:
@@ -920,6 +919,15 @@ public class PartitioningCore {
 
     }
 
+    /**
+     * If the labelled edge is defined, save only the creator-axioms of the edge,
+     * else set the edge as the labelled edge
+     *
+     * @param ax
+     * @param labelledEdge
+     * @param edge
+     * @return
+     */
     private DefaultEdge getLabelledEdge(OWLAxiom ax, DefaultEdge labelledEdge, DefaultEdge edge) {
         if (labelledEdge != null && edge != null) {
             if (!createdByAxioms.containsKey(edge)) {
@@ -939,7 +947,6 @@ public class PartitioningCore {
      * @param ont The given ontology
      */
     public void addNonLogicalAxiomEdges(OWLOntology ont, OWLAxiom ax) {
-
         // Vertex for labelling
         DefaultEdge edge = null;
 
@@ -1021,6 +1028,14 @@ public class PartitioningCore {
 
     Map<OWLObjectPropertyExpression, String[]> propertyToName = new HashMap<>();
 
+    /**
+     * CC's will not necessary have axiom labels. The method creates an connection
+     * from the CC's without axiom labels to the biggest partition
+     *
+     * @param g2 The input graph
+     * @param ccWithLabel Set of CCs with labels
+     * @param ccWithoutLabel Set of CCs without labels
+     */
     private void connectUnLabelledCCToBiggest(Graph<String, DefaultEdge> g2, Set<Set<String>> ccWithLabel,
                                               Set<Set<String>> ccWithoutLabel) {
         // Sort the ccWithLabel by size

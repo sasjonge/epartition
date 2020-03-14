@@ -2,49 +2,114 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
 <comment/>
-<entry key="use_cd">false</entry>
-<entry key="cd_weight_for_non_axiom_edges">3</entry>
-<entry key="print_removed_axioms">true</entry>
-<entry key="global_properties">[Before (attribute), After (attribute), Due to (attribute), Associated with (attribute), Temporally related to (attribute), Characterizes (attribute), During (attribute), Causative agent (attribute)]</entry>
-<entry key="number_of_property_labels_vertex_toplevel">33</entry>
-<entry key="output_graph_type">0</entry>
-<entry key="number_of_indiv_labels">3</entry>
-<entry key="use_ulh">false</entry>
-<entry key="universal_role_treshhold">3</entry>
-<entry key="handle_universal_roles">true</entry>
-<entry key="olh_after_repetitions">1</entry>
-<entry key="range_global_properties">[Component (attribute), Process output (attribute), Inheres in (attribute), Has focus (attribute), Specimen source identity (attribute), Precondition (attribute)]</entry>
-<entry key="evaluation_output_file">/home/sascha/Desktop/onts_statistics.xml</entry>
-<entry key="use_iph">true</entry>
-<entry key="rdf_label_lang">en</entry>
-<entry key="use_bh">false</entry>
-<entry key="number_of_class_labels_sublevel">4</entry>
-<entry key="use_rdf_label">true</entry>
-<entry key="bh_number_of_axiom_labels">1</entry>
-<entry key="show_axioms">true</entry>
-<entry key="eval_runs">false</entry>
-<entry key="number_of_property_labels_edge">34</entry>
-<entry key="upper_level_file">/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json</entry>
-<entry key="property_0_designator">[0]</entry>
-<entry key="ulh_removal_treshhold">0.9</entry>
-<entry key="number_of_class_labels_toplevel">13</entry>
-<entry key="use_olh_after">false</entry>
-<entry key="ontology_output_path+">/home/sascha/Desktop/out/</entry>
-<entry key="evaluate">true</entry>
-<entry key="olh_after_treshhold">0.9</entry>
-<entry key="cd_resolution_at_start">1.0</entry>
-<entry key="number_of_property_labels_vertex_sublevel">3</entry>
-<entry key="cd_leiden">true</entry>
-<entry key="graph_output_path">/home/sascha/Desktop/graphs/</entry>
-<entry key="bh_number_of_repetitions_of_heuristic">1</entry>
-<entry key="number_of_runs">5</entry>
-<entry key="axiom_count">3</entry>
-<entry key="use_olh">false</entry>
-<entry key="olh_layers_to_remove">1</entry>
+<!--Directory of input ontologies (in .owl format)-->
 <entry key="input_directory">/home/sascha/Desktop/onts</entry>
-<entry key="domain_global_properties">[Role group (attribute)]</entry>
-<entry key="export_ontologies">true</entry>
-<entry key="cd_resolution_decrease">0.75</entry>
+<!--Evaluation settings-->
+<!--Do we want to save the evaluation statistics-->
+<entry key="evaluate">true</entry>
+<!--Path to statistic file-->
+<entry key="evaluation_output_file">/home/sascha/Desktop/onts_statistics.xml</entry>
+<!--Use multiple evaluation runs-->
+<entry key="eval_runs">false</entry>
+<!--Number of evaluation runs to average with-->
+<entry key="number_of_runs">5</entry>
+<!--Repeat the evaluation till the layer that is removed by OLH reachs this value-->
 <entry key="max_olh_layer">8</entry>
+
+<!--Graph output settings-->
+<!--Output folder for graphs-->
+<entry key="graph_output_path">/home/sascha/Desktop/graphs/</entry>
+<!--Type of the output graph: 0 = Partition structure raph; 1 = Constaint graph-->
+<entry key="output_graph_type">0</entry>
+<!--Show axioms in the vertices-->
+<entry key="show_axioms">true</entry>
+<!--Number of axioms to show-->
+<entry key="axiom_count">3</entry>
+<!--Number of individuals to show on vertices-->
+<entry key="number_of_indiv_labels">3</entry>
+<!--Number of property labels to show on edges-->
+<entry key="number_of_property_labels_edge">34</entry>
+<!--Number of class labels to show on vertices (toplevel, i.e. highest classes in hierachy)-->
+<entry key="number_of_class_labels_toplevel">13</entry>
+<!--Number of class labels to show on vertices (sublevel, i.e. subclasses per group with the same super class)-->
+<entry key="number_of_class_labels_sublevel">4</entry>
+<!--Number of property labels to show on vertices (toplevel, i.e. highest classes in hierachy)-->
+<entry key="number_of_property_labels_vertex_toplevel">33</entry>
+<!--Number of property labels to show on vertices (sublevel, i.e. subclasses per group with the same super class)-->
+<entry key="number_of_property_labels_vertex_sublevel">3</entry>
+
+<!--Ontology output settings-->
+<!--Path for output ontologies-->
+<entry key="ontology_output_path">/home/sascha/Desktop/out/</entry>
+<!--Export partitions as ontologies?-->
+<entry key="export_ontologies">true</entry>
+
+<!--Settings for the core algorithm-->
+<!--Use rdf labels to build the labels-->
+<entry key="use_rdf_label">true</entry>
+<!--Language of the rdf labels-->
+<entry key="rdf_label_lang">en</entry>
+<!--Designator for the property0 vertexes in the constraint graph-->
+<entry key="property_0_designator">[0]</entry>
+<!--Designator for the property0 vertexes in the constraint graph-->
 <entry key="property_1_designator">[1]</entry>
+<!--Heuristic: Allow ontologies with max. a given number of axioms coitaining universal roles. These axioms are removed-->
+<entry key="handle_universal_roles">true</entry>
+<entry key="universal_role_treshhold">3</entry>
+<!--Ignore check for safety-->
+<entry key="ignore_safety_check">false</entry>
+<!--Print removed axioms to standard output-->
+<entry key="print_removed_axioms">true</entry>
+
+<!--Settings for heuristics-->
+<!--Settings for ignore properties  (IPH)-->
+<!--Use IPH-->
+<entry key="use_iph">true</entry>
+<!--List of global properties to ignore-->
+<entry key="global_properties">[Before (attribute), After (attribute), Due to (attribute), Associated with (attribute), Temporally related to (attribute), Characterizes (attribute), During (attribute), Causative agent (attribute)]</entry>
+<!--List of domain global properties to ignore-->
+<entry key="domain_global_properties">[Role group (attribute)]</entry>
+<!--List of range global properties to ignore-->
+<entry key="range_global_properties">[Component (attribute), Process output (attribute), Inheres in (attribute), Has focus (attribute), Specimen source identity (attribute), Precondition (attribute)]</entry>
+
+<!--Settings for Ontology Level Reducer Heuristic (OLH)-->
+<!--Use OLH-->
+<entry key="use_olh">false</entry>
+<!--Number of layers to remove-->
+<entry key="olh_layers_to_remove">1</entry>
+
+<!--Settings for OLH on biggest component-->
+<!--Use OLH on biggest component-->
+<entry key="use_olh_after">false</entry>
+<!--Number of repetitions of this step-->
+<entry key="olh_after_repetitions">1</entry>
+<!--Portion of the biggest component on the whole ontology to be choosen-->
+<entry key="olh_after_treshhold">0.9</entry>
+
+<!--Settings for Biconnectivity Heuristic (BH)-->
+<!--Use Biconnectivity Heuristic (BH)-->
+<entry key="use_bh">false</entry>
+<!--Max number of axiom labels for edges that are removed-->
+<entry key="bh_number_of_axiom_labels">1</entry>
+<!--Number of repetitions of the BH heuristic-->
+<entry key="bh_number_of_repetitions_of_heuristic">1</entry>
+
+<!--Settings for Community Detection Heuristic (CD)-->
+<!--Use Community Detection Heuristic (CD)-->
+<entry key="use_cd">false</entry>
+<!--Flag stating if the louvain or leiden algorithm should be used. true = leiden, false = louvain-->
+<entry key="cd_leiden">true</entry>
+<!--Weight of non axiom edges in the network-->
+<entry key="cd_weight_for_non_axiom_edges">3</entry>
+<!--Resolution start-valaue and decrease for leiden or louvain algorithm-->
+<entry key="cd_resolution_at_start">1.0</entry>
+<entry key="cd_resolution_decrease">0.75</entry>
+
+<!--Settings for Upper level remover heuristic (ULH)-->
+<!--Use ULH-->
+<entry key="use_ulh">false</entry>
+<!--Path to upper level file (collection of upper level ontologies)-->
+<entry key="upper_level_file">/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json</entry>
+<!--Treshhold for how many percent of the upper level ontology the given ontology can contain, before it's removed-->
+<entry key="ulh_removal_treshhold">0.9</entry>
 </properties>

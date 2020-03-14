@@ -9,8 +9,10 @@ import java.util.Objects;
 public class SafetyChecker {
 
     /**
-     * Class implementing the locality checker of
-     *
+     * Class implementing the locality checker
+     * Bernardo Cuenca Grau, Bijan Parsia, Evren Sirin, Aditya Kalyanpur.
+     * "Automatic Partitioning of OWL Ontologies Using E-Connections". Description Logics 2005
+     * https://www.research.manchester.ac.uk/portal/en/publications/automatic-partitioning-of-owl-ontologies-using-econnections(93290743-02b7-454d-9d85-739d625826ec).html
      * @author Sascha Jongebloed
      */
     public static class SafetyVisitor implements OWLAxiomVisitor {
@@ -68,6 +70,9 @@ public class SafetyChecker {
         }
     }
 
+    /**
+     * A visitor to deice if a concept is local
+     */
     private static class LocalityVisitor implements OWLClassExpressionVisitor {
 
         boolean isLocal = true;
@@ -196,6 +201,11 @@ public class SafetyChecker {
         }
     }
 
+    /**
+     * Decide if an ontology is safe
+     * @param ontology The input ontoloy
+     * @return true if the ontology is safe
+     */
     public static boolean isSafe(OWLOntology ontology) {
 
         return ontology.logicalAxioms(Imports.INCLUDED).anyMatch(ax -> {

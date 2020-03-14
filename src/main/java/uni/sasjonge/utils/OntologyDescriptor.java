@@ -683,6 +683,9 @@ public class OntologyDescriptor {
 		}
 	}
 
+	/**
+	 * Inits some hashmaps and the manchester syntax renderer
+	 */
 	public static void init() {
 		if (owlObjectToString == null) {
 			owlObjectToString = new HashMap<>();
@@ -695,6 +698,9 @@ public class OntologyDescriptor {
 		}
 	}
 
+	/**
+	 * Clear the data
+	 */
 	public static void clearMemory() {
 		manchester = null;
 		owlObjectToString = null;

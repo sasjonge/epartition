@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Tool to analyze safety and occurence of SWRL axioms or axioms containing universal roles
+ * for all ontologies in a directory
+ */
 public class SafetyAndUniversalRoleAnalyzer {
     public static void main(String[] args) {
         // Read all files in the given directory

@@ -12,6 +12,10 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
+/**
+ * Tool to analyze safety and occurence of SWRL axioms
+ * for all ontologies in a directory
+ */
 public class SafetyAnalyzer {
     public static void main(String[] args) {
         // Read all files in the given directory
