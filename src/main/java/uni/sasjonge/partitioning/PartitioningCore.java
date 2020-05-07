@@ -271,13 +271,13 @@ public class PartitioningCore {
         System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
         // ********************Biconnectivity heuristic********************
-        if (Settings.USE_BH) {
+        if (Settings.USE_BH && ontology.getLogicalAxiomCount()>0) {
             g = (new BiconnectivityManager()).removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
             System.out.println("Finished biconnectivity heuristic");
         }
 
         // ***************** Community detection heuristic ****************
-        if (Settings.USE_CD) {
+        if (Settings.USE_CD && ontology.getLogicalAxiomCount()>0) {
             CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
             g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
             System.out.println("Finished community detection heuristic");
@@ -383,11 +383,11 @@ public class PartitioningCore {
         System.out.println("CCs: " + ci.connectedSets().size());
 
         // Add Annotations and Declarations as labels to the graph
-        ontology.axioms(Imports.fromBoolean(true)).forEach(ax -> {
-            if (!ax.isLogicalAxiom()) {
-                addNonLogicalAxiomEdges(ontology, ax);
-            }
-        });
+        // ontology.axioms(Imports.fromBoolean(true)).forEach(ax -> {
+        //    if (!ax.isLogicalAxiom()) {
+        //        addNonLogicalAxiomEdges(ontology, ax);
+        //    }
+        //});
 
         // Create the new ontologies (if flag is set, that we need them for the output)
         toReturn = createOntologyFromCC(ci.connectedSets(), ontology);
@@ -716,11 +716,11 @@ public class PartitioningCore {
                         && !rangeGlobalProp.contains(objPropRangeAx.getProperty().getNamedProperty())) {
                     if (!objPropRangeAx.getRange().isOWLThing()) {
                         // Connect R1 to the range
-                        labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 0),
+                        addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 1),
                                 OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
-                    } else {
-                        labelledEdge = createLoopEdge(g, getPropertyVertex(objPropRangeAx.getProperty(), 0));
+
                     }
+                    labelledEdge = createLoopEdge(g, getPropertyVertex(objPropRangeAx.getProperty(), 0));
                 }
                 break;
 

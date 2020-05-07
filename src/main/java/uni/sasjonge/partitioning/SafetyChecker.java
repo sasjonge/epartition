@@ -208,10 +208,15 @@ public class SafetyChecker {
      */
     public static boolean isSafe(OWLOntology ontology) {
 
-        return ontology.logicalAxioms(Imports.INCLUDED).anyMatch(ax -> {
-            SafetyVisitor sv = new SafetyVisitor();
-            ax.accept(sv);
-            return sv.isSafe;
-        });
+        if (ontology.getLogicalAxiomCount() > 0) {
+
+            return !ontology.logicalAxioms(Imports.INCLUDED).anyMatch(ax -> {
+                SafetyVisitor sv = new SafetyVisitor();
+                ax.accept(sv);
+                return !sv.isSafe;
+            });
+        } else {
+            return true;
+        }
     }
 }

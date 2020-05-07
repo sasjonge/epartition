@@ -87,7 +87,7 @@ public class Partitioner {
             long loadEndTime = System.nanoTime();
             System.out.println("Loading the ontology took " + (loadEndTime - loadStartTime) / 1000000 + "ms");
             if (Settings.EVALUATE) {
-                builder.append(loadedOnt.getAxiomCount() + ", ");
+                builder.append(loadedOnt.getLogicalAxiomCount() + ", ");
                 builder.append((endInitTime - startTime) / 1000000 + ", ");
                 builder.append((loadEndTime - loadStartTime) / 1000000 + ", ");
             }
@@ -265,29 +265,31 @@ public class Partitioner {
                 }
             }
 
-            // Export the graph
             long startGraphTime = System.nanoTime();
-            // Initiate the graphexporter (create the hierachy and descriptors)
-            GraphExporter.init(oldOntology);
+            if (Settings.EXPORT_GRAPH) {
+                // Export the graph
 
-            // Choose type of output graph
-            switch (Settings.OUTPUT_GRAPH_TYPE) {
+                // Initiate the graphexporter (create the hierachy and descriptors)
+                GraphExporter.init(oldOntology);
 
-                // Alternative: Create the complex graph created by the algorithm
-                case 2:
-                    break;
-                case 1:
-                    GraphExporter.exportConstraintGraph(pc.g,
-                            Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
-                    break;
-                // Create the output graph in form of the cc structure
-                case 0:
-                default:
-                    String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.edgeToAxioms,
-                            pc.edgeToVertex, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
-                    break;
+                // Choose type of output graph
+                switch (Settings.OUTPUT_GRAPH_TYPE) {
+
+                    // Alternative: Create the complex graph created by the algorithm
+                    case 2:
+                        break;
+                    case 1:
+                        GraphExporter.exportConstraintGraph(pc.g,
+                                Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
+                        break;
+                    // Create the output graph in form of the cc structure
+                    case 0:
+                    default:
+                        String graphStructure = GraphExporter.exportCCStructureGraph(pc.g, oldOntology, pc.edgeToAxioms,
+                                pc.edgeToVertex, Settings.GRAPH_OUTPUT_PATH + getFileName(input_ontology) + ".graphml");
+                        break;
+                }
             }
-
             long endGraphTime = System.nanoTime();
             System.out.println("Graph building took " + (endGraphTime - startGraphTime) / 1000000 + "ms");
 
@@ -366,7 +368,7 @@ public class Partitioner {
 
             }
 
-            if (Settings.EVALUATE) {
+            if (Settings.EVALUATE && Settings.EXPORT_GRAPH) {
                 builder.append((endGraphTime - startGraphTime) / 1000000 + ", ");
             }
 
@@ -441,6 +443,7 @@ public class Partitioner {
             numOfAxiomsAfterHeuristics += ont.getLogicalAxiomCount();
         }
 
+        System.out.println(sizeOfOriginalOntology + " // " + numOfAxiomsAfterHeuristics);
         int removedAxiomCount = sizeOfOriginalOntology - numOfAxiomsAfterHeuristics;
 
         return new double[]{removedAxiomCount, ((double) removedAxiomCount) / ((double) sizeOfOriginalOntology)};
@@ -467,7 +470,7 @@ public class Partitioner {
                 BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
                 bw.write("Name, Num. of Axioms, Initiating classes (ms), Loading the Ontology (ms), " +
                         "Handle Universal Roles (ms), Copy Ontology (ms), Heuristics (ms), Partitioning Algorithm (ms), " +
-                        (Settings.EXPORT_ONTOLOGIES ? "Exporting Ontologies (ms)," : "") + "Export Graph (ms), Overall (ms), " +
+                        (Settings.EXPORT_ONTOLOGIES ? "Exporting Ontologies (ms)," : "") + (Settings.EXPORT_GRAPH ? "Export Graph (ms)," : "")  + " Overall (ms), " +
                         ((Settings.USE_OLH || Settings.USE_OLH_AFTER || Settings.USE_BH || Settings.USE_CD || Settings.USE_ULH) ?
                                 "Removed Axioms, Perc. of removed Axioms, " : "") +
                         "Size of biggest Part., Perc. of biggest Part., Number of Part\n");
@@ -486,40 +489,45 @@ public class Partitioner {
                                 // Save the statistics of this partition in a string
                                 // Save name of ont and remove it from string
                                 String[] statsAsArrayStr = part.getStatistics().split(",");
-                                String nameOfOnt = statsAsArrayStr[0];
-                                String[] filteredStatsAsArrayStr = Arrays.copyOfRange(statsAsArrayStr, 1, statsAsArrayStr.length);
+                                String stats;
+                                if (statsAsArrayStr.length > 1) {
+                                    String nameOfOnt = statsAsArrayStr[0];
+                                    String[] filteredStatsAsArrayStr = Arrays.copyOfRange(statsAsArrayStr, 1, statsAsArrayStr.length);
 
-                                for (int runCount = 0; runCount < Settings.NUMBER_OF_RUNS; runCount++) {
-                                    double[] statsOfThisRun = Arrays.stream(filteredStatsAsArrayStr)
-                                            .map(String::trim)
-                                            .mapToDouble(Double::parseDouble).toArray();
-                                    arrayOfStatistics[runCount] = statsOfThisRun;
-                                }
-
-                                int lengOfStatistics = arrayOfStatistics[0].length;
-                                double[] statsArray = new double[lengOfStatistics];
-
-                                for (int statCount = 0; statCount < lengOfStatistics; statCount++) {
-                                    double[] thisStats = new double[arrayOfStatistics.length];
-                                    for (int j = 0; j < arrayOfStatistics.length; j++) {
-                                        thisStats[j] = arrayOfStatistics[j][statCount];
+                                    for (int runCount = 0; runCount < Settings.NUMBER_OF_RUNS; runCount++) {
+                                        double[] statsOfThisRun = Arrays.stream(filteredStatsAsArrayStr)
+                                                .map(String::trim)
+                                                .mapToDouble(Double::parseDouble).toArray();
+                                        arrayOfStatistics[runCount] = statsOfThisRun;
                                     }
 
-                                    Arrays.sort(thisStats);
-                                    double[] filteredStats = Arrays.copyOfRange(thisStats, 1, thisStats.length - 1);
+                                    int lengOfStatistics = arrayOfStatistics[0].length;
+                                    double[] statsArray = new double[lengOfStatistics];
 
-                                    // Take average
-                                    OptionalDouble avg = Arrays.stream(filteredStats).average();
+                                    for (int statCount = 0; statCount < lengOfStatistics; statCount++) {
+                                        double[] thisStats = new double[arrayOfStatistics.length];
+                                        for (int j = 0; j < arrayOfStatistics.length; j++) {
+                                            thisStats[j] = arrayOfStatistics[j][statCount];
+                                        }
 
-                                    statsArray[statCount] = avg.isPresent() ? avg.getAsDouble() : 0.0;
+                                        Arrays.sort(thisStats);
+                                        double[] filteredStats = Arrays.copyOfRange(thisStats, 1, thisStats.length - 1);
+
+                                        // Take average
+                                        OptionalDouble avg = Arrays.stream(filteredStats).average();
+
+                                        statsArray[statCount] = avg.isPresent() ? avg.getAsDouble() : 0.0;
+                                    }
+
+                                    String statsArrayAsString = "" + statsArray[0];
+                                    for (int k = 1; k < statsArray.length; k++) {
+                                        statsArrayAsString = statsArrayAsString + ", " + statsArray[k];
+                                    }
+
+                                    stats = nameOfOnt + ", " + statsArrayAsString;
+                                } else {
+                                    stats = part.getStatistics();
                                 }
-
-                                String statsArrayAsString = "" + statsArray[0];
-                                for (int k = 1; k < statsArray.length; k++) {
-                                    statsArrayAsString = statsArrayAsString + ", " + statsArray[k];
-                                }
-
-                                String stats = nameOfOnt + ", " + statsArrayAsString;
                                 if (stats != null && Settings.EVALUATE) {
                                     // And write it in the output file
                                     bw.write(stats + "\n");
@@ -620,6 +628,13 @@ public class Partitioner {
 
     public static void main(String[] args) {
 
+        // Load the settings file first, if it is given
+        for (String arg : args) {
+            String[] splittedArg = arg.substring(2,arg.length()).split("=");
+            if (splittedArg.equals("settings_file")) {
+                Settings.readSettingsFile(splittedArg[1]);
+            }
+        }
         // Split for cmd options and proceed accordingly
         for(String arg : args) {
             String[] splittedArg = arg.substring(2,arg.length()).split("=");
@@ -639,6 +654,9 @@ public class Partitioner {
                         break;
                     case "use_rdf_label":
                         Settings.USE_RDF_LABEL = true;
+                        break;
+                    case "handle_universal_roles":
+                        Settings.HANDLE_UNIVERSAL_ROLES = true;
                         break;
                     case "ignore_safety_check":
                         Settings.IGNORE_SAFETY_CHECK = true;
@@ -681,9 +699,13 @@ public class Partitioner {
                     case "max_olh_layer":
                         Settings.MAX_OLH_LAYER = Integer.parseInt(splittedArg[1]);
                     case "graph_output_path":
-                        Settings.INPUT_DIRECTORY = splittedArg[1];
+                        Settings.GRAPH_OUTPUT_PATH = splittedArg[1];
+                        break;
+                    case "graph_type":
+                        Settings.OUTPUT_GRAPH_TYPE = Integer.parseInt(splittedArg[1]);
                         break;
                     case "axiom_count":
+                        Settings.SHOW_AXIOMS = true;
                         Settings.AXIOM_COUNT = Integer.parseInt(splittedArg[1]);
                         break;
                     case "number_of_indiv_labels":
@@ -727,6 +749,9 @@ public class Partitioner {
                         break;
                     case "range_global_properties":
                         Settings.RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(splittedArg[1].substring(1, splittedArg[1].length() - 1).split(", ")));
+                        break;
+                    case "olh_layers_to_remove":
+                        Settings.OLH_LAYERS_TO_REMOVE = Integer.parseInt(splittedArg[1]);
                         break;
                     case "olh_after_repetitions":
                         Settings.OLH_AFTER_REPETITIONS = Integer.parseInt(splittedArg[1]);

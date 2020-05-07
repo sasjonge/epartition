@@ -1,5 +1,6 @@
 package uni.sasjonge;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -12,14 +13,14 @@ import java.util.Properties;
  *
  */
 public class Settings {
-	
+
 	// -------------------------- INPUT ONTOLOGIES -----------------------------
 	// The input directory where the .owl files should be
-	public static String INPUT_DIRECTORY = "/home/sascha/Desktop/onts";
+	public static String INPUT_DIRECTORY = Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().substring(0,Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().lastIndexOf(File.separator));
 
 	// ---------------------- Evaluation Data Output --------------------------
 	// Is this a evaluation run?
-	public static boolean EVALUATE = true;
+	public static boolean EVALUATE = false;
 	// Output path for the evaluation statistics
 	public static String EVALUATION_OUTPUT_FILE = INPUT_DIRECTORY + "_statistics.xml";
 
@@ -30,11 +31,14 @@ public class Settings {
 
 	// For the OLH statistic: Start the evaluation new with an increased number of layers
 	//that will beremoved
-	public static int MAX_OLH_LAYER = 8;
+	public static int MAX_OLH_LAYER = 3;
 
 	// ----------------------- GRAPH OUTPUT ------------------------------------
+	// Flag if a graph should be created
+	public static final boolean EXPORT_GRAPH = true;
+
 	// The output path for the graph
-	public static String GRAPH_OUTPUT_PATH = "/home/sascha/Desktop/graphs/";
+	public static String GRAPH_OUTPUT_PATH = Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().substring(0,Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().lastIndexOf(File.separator));
 
 	// The type of the output graph:
 	// 0 = Partition structure graph
@@ -48,28 +52,28 @@ public class Settings {
 	public static int AXIOM_COUNT = 3;
 	
 	// How many individual labels should be shown
-	public static int NUM_OF_INDIV_LABELS = 3;
+	public static int NUM_OF_INDIV_LABELS = 5;
 	// Number of properties on a edge
-	public static int NUM_OF_PROPERTY_LABELS_EDGE = 34;
+	public static int NUM_OF_PROPERTY_LABELS_EDGE = 4;
 
 	// Number of class labels on a node
 	// Max number of "Groups" to be shown
-	public static int NUM_OF_CLASS_LABELS_TOPLEVEL = 13;
+	public static int NUM_OF_CLASS_LABELS_TOPLEVEL = 5;
 	// Max number of classes per group
-	public static int NUM_OF_CLASS_LABELS_SUBLEVEL = 4;
+	public static int NUM_OF_CLASS_LABELS_SUBLEVEL = 5;
 	
 	// Number of property labels on a node
 	// Max number of "Groups" to be shown
-	public static int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 33;
+	public static int NUM_OF_PROPERTY_LABELS_NODE_TOPLEVEL = 4;
 	// Max number of classes per group
 	public static int NUM_OF_PROPERTY_LABELS_NODE_SUBLEVEL = 3;
 
 	// ----------------------- ONTOLOGY OUTPUT ---------------------------------
 	// The output path for the graph
-	public static String ONOTOLOGY_OUTPUT_PATH = "/home/sascha/Desktop/out/";
+	public static String ONOTOLOGY_OUTPUT_PATH = Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().substring(0,Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().lastIndexOf(File.separator));
 
 	// Should the created partitions exported as owl?
-	public static boolean EXPORT_ONTOLOGIES = true;
+	public static boolean EXPORT_ONTOLOGIES = false;
 
 	// ------- Settings for the default partitioner ----------
 	
@@ -95,34 +99,18 @@ public class Settings {
 	
 	// -------------- Settings for heuristics -----------------
 	// ----------- Ignore Properties Heuristic (IPH) ----------
-	public static boolean USE_IPH = true;
+	public static boolean USE_IPH = false;
 
 	// Properties that are used global (in several topics) (in domain and range)
 	public static HashSet<String> GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
-			"Associated with (attribute)",
-			"Causative agent (attribute)",
-			"Due to (attribute)",
-			"Temporally related to (attribute)",
-			"After (attribute)",
-			"Before (attribute)",
-			"During (attribute)",
-			"Characterizes (attribute)"
-
 	}));
 
 	// Properties that are used global in their domain
 	public static HashSet<String> DOMAIN_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
-			"Role group (attribute)"
 	}));
 
 	// Properties that are used global in their range
 	public static HashSet<String> RANGE_GLOBAL_PROPERTIES = new HashSet<String>(Arrays.asList(new String[]{
-			"Has focus (attribute)",
-			"Component (attribute)",
-			"Process output (attribute)",
-			"Inheres in (attribute)",
-			"Precondition (attribute)", // Connects Qualifier Value and Even
-			"Specimen source identity (attribute)" // Occupation, environment, physical object
 	}));
 
 	// -------- Ontology Level Reducer Heuristic (OLH) --------
@@ -133,7 +121,7 @@ public class Settings {
 	// Alternative (or addition): OLH on biggest component after partitioning
 	public static boolean USE_OLH_AFTER = false;
 	// How many repetitions of this heuristic (one level is removed in every step)
-	public static int OLH_AFTER_REPETITIONS = 1;
+	public static int OLH_AFTER_REPETITIONS = 2;
 	// Minimal portion of ontology to repeat the heuristic
 	public static double OLH_AFTER_TRESHHOLD = 0.9;
 	
@@ -155,10 +143,10 @@ public class Settings {
 	public static double CD_RESOLUTION_AT_START = 1d;
 	public static double CD_RESOLUTION_DECREASE = 0.75d;
 
-	// -------- Upper level remover heuristic(ULH) -----------
+	// -------- Upper level remover heuristic (ULH) -----------
 	public static boolean USE_ULH = false;
 	// File used in the UpperLevelRemover. Should contain upper level ontologies
-	public static String UPPER_LEVEL_FILE = "/home/sascha/workspace/java_ws/partitioner/res/upperlevels/upperlevels.json";
+	public static String UPPER_LEVEL_FILE = Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().substring(0,Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath().lastIndexOf(File.separator));
 	// Treshhold for how many percent of the upper level ontology the given ontology can contain,
 	// before it's removed
 	public static double ULH_REMOVAL_TRESHHOLD = 0.9d;

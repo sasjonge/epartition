@@ -51,6 +51,7 @@ public class BiconnectivityManager extends AxiomCreatedBridgesRemoverHeuristic {
 			// Create the BiconnectivityInspector and get all bridges
 			BiconnectivityInspector<String, DefaultEdge> ci = new BiconnectivityInspector<>(g);
 			Set<DefaultEdge> bridgesOfThisStep = ci.getBridges();
+
 			// Remove the bridges that weren't created by axioms
 			bridgesOfThisStep.removeIf(p -> !createdByAxioms.containsKey(p));
 
@@ -61,8 +62,10 @@ public class BiconnectivityManager extends AxiomCreatedBridgesRemoverHeuristic {
 			List<DefaultEdge> bridgesOfThisStepFiltered = bridgesOfThisStep.stream()
 					.filter(p -> (createdByAxioms.get(p).size() < Settings.BH_NUM_OF_AXIOM_LABELS))
 					.collect(Collectors.toList());
+
 			// Make sure, that at least some edges survive the filter
 			int numOfAxiomLabels = Settings.BH_NUM_OF_AXIOM_LABELS;
+
 			while (bridgesOfThisStepFiltered.isEmpty() && numOfAxiomLabels <= maxNumberOfCreatorAxioms) {
 				numOfAxiomLabels++;
 				final int filterNum = numOfAxiomLabels;

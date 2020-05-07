@@ -8,8 +8,10 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.jgrapht.Graph;
+import org.jgrapht.ListenableGraph;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultListenableGraph;
 import org.semanticweb.owlapi.model.OWLAxiom;
 
 import uni.sasjonge.Settings;
@@ -32,29 +34,34 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 	protected boolean removeAxiomEdgesOfNoSingleton(Graph<String, DefaultEdge> g,
 			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels,
 			Iterator<DefaultEdge> edgeIterator) {
+		// Make the graph listenable
+		ListenableGraph<String, DefaultEdge> lGraph = new DefaultListenableGraph(g);
+
 		// A flag if atleast one axiom labelled edge was removed
 		boolean removedAxiomEdge = false;
 
-		// Create a connectivity inspector, to count the singletons before the removals
-		ConnectivityInspector<String, DefaultEdge> ciOld = new ConnectivityInspector<>(g);
+		// Create a connectivity inspector, to count the singletons before the removals and
+		// add the inspector as a listener
+		ConnectivityInspector<String, DefaultEdge> ciOrg = new ConnectivityInspector<>(g);
 		int oldNumOfSingletons = 0;
-		for (Set<String> cc : ciOld.connectedSets()) {
+		for (Set<String> cc : ciOrg.connectedSets()) {
 			if (cc.size() < 2) {
 				oldNumOfSingletons++;
 			}
 		}
+		lGraph.addGraphListener(ciOrg);
 
 		// Counter for the singletons after the removal
 		int newNumOfSingletons = 0;
 
 		// For each edge in the iterator
 		while (edgeIterator.hasNext()) {
+
 			// Remove the edge
-			GraphRemovalUndo undoer = removeAxiomEdgesOf(g, createdByAxioms, labels, edgeIterator.next());
+			GraphRemovalUndo undoer = removeAxiomEdgesOf(lGraph, createdByAxioms, labels, edgeIterator.next());
 
 			// Count the number of singletons
-			ConnectivityInspector<String, DefaultEdge> ciNew = new ConnectivityInspector<>(g);
-			for (Set<String> cc : ciNew.connectedSets()) {
+			for (Set<String> cc : ciOrg.connectedSets()) {
 				if (cc.size() < 2) {
 					newNumOfSingletons++;
 				}
@@ -83,9 +90,9 @@ public abstract class AxiomCreatedBridgesRemoverHeuristic {
 	 * Remove edge, and all other edges that came from the same axiom as the edge
 	 * 
 	 * @param g
-	 * @param edgeToAxioms
-	 * @param axiomToEdges
-	 * @param next
+	 * @param createdByAxioms
+	 * @param labels
+	 * @param edge
 	 */
 	private GraphRemovalUndo removeAxiomEdgesOf(Graph<String, DefaultEdge> g,
 			Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms, Map<DefaultEdge, Set<OWLAxiom>> labels, DefaultEdge edge) {
