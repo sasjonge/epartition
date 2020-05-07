@@ -21,7 +21,9 @@ import javax.swing.plaf.basic.BasicInternalFrameTitlePane.CloseAction;
 import javax.xml.transform.TransformerConfigurationException;
 
 import org.jgrapht.Graph;
+import org.jgrapht.GraphPath;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
@@ -126,6 +128,11 @@ public class PartitioningCore {
     // Map of vertices to axioms their adjacent edges are labelled with
     public Set<String> vertexWithAxiomEdges = new HashSet<>();
 
+    // IPH: Ignore this properties
+    HashSet<OWLObjectProperty> globalProp = new HashSet<>();
+    HashSet<OWLObjectProperty> domainGlobalProp = new HashSet<>();
+    HashSet<OWLObjectProperty> rangeGlobalProp = new HashSet<>();
+
     // Map of Axioms to the edges it created
     public Map<DefaultEdge, Set<OWLAxiom>> createdByAxioms = new HashMap<>();
     Map<OWLAnnotationProperty, Set<OWLAxiom>> annotToAxioms;
@@ -146,16 +153,43 @@ public class PartitioningCore {
      */
     public List<OWLOntology> partition(OWLOntology ontology) throws IOException, ExportException {
 
-        g  = new DefaultUndirectedGraph<>(DefaultEdge.class);
+        g = new DefaultUndirectedGraph<>(DefaultEdge.class);
         // The partitions
         List<OWLOntology> toReturn = new ArrayList<>();
 
         long addVertexStartTime = System.nanoTime();
 
+        // Save the properties we want to ignore in the IP Heuristic
+        if (Settings.USE_IPH) {
+            ontology.objectPropertiesInSignature(Imports.fromBoolean(true)).forEach(objProp -> {
+                for (String propName : Settings.GLOBAL_PROPERTIES) {
+                    if (OntologyDescriptor.getCleanNameOWLObj(objProp).equals(propName) ||
+                            (OntologyDescriptor.owlObjectToString != null && OntologyDescriptor.owlObjectToString.get(objProp).equals(propName))) {
+                        globalProp.add(objProp);
+                        break;
+                    }
+                }
+                for (String propName : Settings.DOMAIN_GLOBAL_PROPERTIES) {
+                    if (OntologyDescriptor.getCleanNameOWLObj(objProp).equals(propName) ||
+                            (OntologyDescriptor.owlObjectToString != null && OntologyDescriptor.owlObjectToString.get(objProp).equals(propName))) {
+                        domainGlobalProp.add(objProp);
+                        break;
+                    }
+                }
+                for (String propName : Settings.RANGE_GLOBAL_PROPERTIES) {
+                    if (OntologyDescriptor.getCleanNameOWLObj(objProp).equals(propName) ||
+                            (OntologyDescriptor.owlObjectToString != null && OntologyDescriptor.owlObjectToString.get(objProp).equals(propName))) {
+                        rangeGlobalProp.add(objProp);
+                        break;
+                    }
+                }
+            });
+        }
+
         // Add the Vertexes to our defined algorithm
         // Vertex: ObjectProperties
         ontology.objectPropertiesInSignature(Imports.fromBoolean(true)).forEach(objProp -> {
-            if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity()) {
+            if (!objProp.isOWLTopObjectProperty() && !objProp.isTopEntity() && !globalProp.contains(objProp)) {
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_0_DESIGNATOR);
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(objProp) + Settings.PROPERTY_1_DESIGNATOR);
             }
@@ -199,20 +233,9 @@ public class PartitioningCore {
             });
         });
 
-
-        // TODO: Any faster way to get all names of anonymous classes?
-        // Pattern pattern = Pattern.compile("_:genid[0-9]*");
-        // ontology.logicalAxioms().forEach(a -> {
-        //    Matcher matcher = pattern.matcher(a.toString());
-        //    if (matcher.find()) {
-        //        g.addVertex(matcher.group());
-        //    }
-        // });
-
         ontology.referencedAnonymousIndividuals(Imports.fromBoolean(true)).forEach(anonIndiv ->
                 g.addVertex(OntologyDescriptor.getCleanNameOWLObj(anonIndiv))
         );
-        //ontology.anonymousIndividuals()
 
         long addVertexEndTime = System.nanoTime();
         System.out.println("Adding vertexes took " + (addVertexEndTime - addVertexStartTime) / 1000000 + "ms");
@@ -248,13 +271,13 @@ public class PartitioningCore {
         System.out.println("Adding axiom edges took " + (addAxiomEdgeEndTime - addAxiomEdgeStartTime) / 1000000 + "ms");
 
         // ********************Biconnectivity heuristic********************
-        if (Settings.USE_BH) {
+        if (Settings.USE_BH && ontology.getLogicalAxiomCount()>0) {
             g = (new BiconnectivityManager()).removeAxiomLabelledBridgesNoSingletons(g, edgeToAxioms, createdByAxioms);
             System.out.println("Finished biconnectivity heuristic");
         }
 
         // ***************** Community detection heuristic ****************
-        if (Settings.USE_CD) {
+        if (Settings.USE_CD && ontology.getLogicalAxiomCount()>0) {
             CommunityDetectionManager cdm = new CommunityDetectionManager(g, createdByAxioms);
             g = cdm.removeBridges(createdByAxioms, edgeToAxioms);
             System.out.println("Finished community detection heuristic");
@@ -306,6 +329,51 @@ public class PartitioningCore {
         // to)
         connectUnLabelledCCToBiggest(g, ccWithLabel, ccWithoutLabel);
 
+        // TOREMOVE: Check of shortest path between Physical Force and Organism in SNOMED
+//        DijkstraShortestPath<String, DefaultEdge> dij = new DijkstraShortestPath<>(g);
+//        String conA = "Physical object (physical object)";
+//        String conB = "Cellular blood product, human (product)";
+//        String conC = "Physical object (physical object)";
+//        GraphPath<String, DefaultEdge> path = dij.getPath(conA, conB);
+//        GraphPath<String, DefaultEdge> path2 = dij.getPath(conB, conC);
+//        GraphPath<String, DefaultEdge> path3 = dij.getPath(conA, conC);
+//
+//        System.out.println("-----------------------------------------------");
+//        System.out.println("Path  between " + conA + " and " + conB + ":");
+//        System.out.println(path == null ? "None" : path.toString());
+//        if (path != null) {
+//            for (DefaultEdge e : path.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//        }
+//        System.out.println("-----------------------------------------------");
+//
+//        System.out.println("Path  between " + conB + " and " + conC + ":");
+//        System.out.println(path2 == null ? "None" : path2.toString());
+//        if (path2 != null) {
+//
+//            for (DefaultEdge e : path2.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//        }
+//        System.out.println("-----------------------------------------------");
+//        System.out.println("Path  between " + conA + " and " + conC + ":");
+//        System.out.println(path3 == null ? "None" : path3.toString());
+//        if (path3 != null) {
+//
+//            for (DefaultEdge e : path3.getEdgeList()) {
+//                if (createdByAxioms.containsKey(e)) {
+//                    System.out.println(e.toString() + "created by: " + createdByAxioms.get(e).toString());
+//                }
+//            }
+//            System.out.println("-----------------------------------------------");
+//        }
+        // TOREMOVE: END
+
         long ccStartTime = System.nanoTime();
         // Find the connected components
         ConnectivityInspector<String, DefaultEdge> ci = new ConnectivityInspector<>(g);
@@ -315,12 +383,11 @@ public class PartitioningCore {
         System.out.println("CCs: " + ci.connectedSets().size());
 
         // Add Annotations and Declarations as labels to the graph
-        ontology.axioms(Imports.fromBoolean(true)).forEach(ax -> {
-            if (!ax.isLogicalAxiom()) {
-                addNonLogicalAxiomEdges(ontology, ax);
-            }
-        });
-
+        // ontology.axioms(Imports.fromBoolean(true)).forEach(ax -> {
+        //    if (!ax.isLogicalAxiom()) {
+        //        addNonLogicalAxiomEdges(ontology, ax);
+        //    }
+        //});
 
         // Create the new ontologies (if flag is set, that we need them for the output)
         toReturn = createOntologyFromCC(ci.connectedSets(), ontology);
@@ -339,8 +406,7 @@ public class PartitioningCore {
 
         switch (expr.getClassExpressionType()) {
 
-            // ------------------------------ Object Restrictions
-            // ---------------------------
+            // ------------------------------ Object Restrictions ---------------------------
 
             // ObjectComplementOf
             case OBJECT_COMPLEMENT_OF:
@@ -373,10 +439,15 @@ public class PartitioningCore {
                 OWLObjectPropertyExpression property = restriction.getProperty();
                 OWLClassExpression con = restriction.getFiller();
                 // Edge between expr and the right property node
-                g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(property, 0));
-                if (!((con.isOWLThing() || con.isOWLNothing()))) {
-                    // Edge between property and filler
-                    g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(con));
+                if (!domainGlobalProp.contains(property.getNamedProperty()) && !globalProp.contains(property.getNamedProperty())) {
+                    g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(property, 0));
+                }
+
+                if (!rangeGlobalProp.contains(property.getNamedProperty()) && !globalProp.contains(property.getNamedProperty())) {
+                    if (!((con.isOWLThing() || con.isOWLNothing()))) {
+                        // Edge between property and filler
+                        g.addEdge(getPropertyVertex(property, 1), OntologyDescriptor.getCleanNameOWLObj(con));
+                    }
                 }
                 break;
 
@@ -392,8 +463,12 @@ public class PartitioningCore {
             case OBJECT_HAS_SELF:
                 OWLObjectPropertyExpression propertySelf = ((OWLObjectHasSelf) expr).getProperty();
                 // Connect expr with r0 and r1 for property r
-                g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(propertySelf, 0));
-                g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(propertySelf, 1));
+                if (!domainGlobalProp.contains(propertySelf.getNamedProperty()) && !globalProp.contains(propertySelf.getNamedProperty())) {
+                    g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(propertySelf, 0));
+                }
+                if (!rangeGlobalProp.contains(propertySelf.getNamedProperty()) && !globalProp.contains(propertySelf.getNamedProperty())) {
+                    g.addEdge(OntologyDescriptor.getCleanNameOWLObj(expr), getPropertyVertex(propertySelf, 1));
+                }
                 break;
 
             // ObjectHasValue
@@ -514,16 +589,21 @@ public class PartitioningCore {
                 OWLObjectPropertyExpression subProp = subObjectPropAx.getSubProperty();
                 OWLObjectPropertyExpression superProp = subObjectPropAx.getSuperProperty();
                 String vertexSubPropZero = getPropertyVertex(subProp, 0);
-                if (!superProp.isOWLTopObjectProperty()) {
-                    labelledEdge = addEdgeHelp(g, vertexSubPropZero, getPropertyVertex(superProp, 0));
-                    DefaultEdge edge = addEdgeHelp(g, getPropertyVertex(subProp, 1), getPropertyVertex(superProp, 1));
-                    if (!createdByAxioms.containsKey(edge)) {
-                        createdByAxioms.put(edge, new HashSet<OWLAxiom>());
+                if (!globalProp.contains(subProp.getNamedProperty()) && !globalProp.contains(superProp.getNamedProperty())) {
+                    if (!superProp.isOWLTopObjectProperty()) {
+                        if (!domainGlobalProp.contains(subProp.getNamedProperty()) && !domainGlobalProp.contains(superProp.getNamedProperty())) {
+                            labelledEdge = addEdgeHelp(g, vertexSubPropZero, getPropertyVertex(superProp, 0));
+                        }
+
+                        DefaultEdge edge = null;
+                        if (!rangeGlobalProp.contains(subProp.getNamedProperty()) && !rangeGlobalProp.contains(superProp.getNamedProperty())) {
+                            edge = addEdgeHelp(g, getPropertyVertex(subProp, 1), getPropertyVertex(superProp, 1));
+                        }
+
+                        labelledEdge = getLabelledEdge(ax, labelledEdge, edge);
                     }
-                    createdByAxioms.get(edge).add(ax);
-                } else {
-                    labelledEdge = createLoopEdge(g, vertexSubPropZero);
                 }
+
                 break;
 
             case "SubPropertyChainOf":
@@ -533,23 +613,42 @@ public class PartitioningCore {
                 String vertexPropChain0 = getPropertyVertex(propertyChain.get(0), 0);
                 // Link first Property0 with Superproperty0
                 String superProp2 = getPropertyVertex(propChainAx.getSuperProperty(), 0);
-                labelledEdge = addEdgeHelp(g, vertexPropChain0, superProp2);
-                // Link last Property1 with Superproperty1
-                DefaultEdge edge = addEdgeHelp(g, getPropertyVertex(propertyChain.get(chainLength - 1), 1),
-                        getPropertyVertex(propChainAx.getSuperProperty(), 1));
-                if (!createdByAxioms.containsKey(edge)) {
-                    createdByAxioms.put(edge, new HashSet<OWLAxiom>());
+                DefaultEdge edge = null;
+                if (!globalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
+                    if (!domainGlobalProp.contains(propertyChain.get(0).getNamedProperty())
+                            && !domainGlobalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
+                        labelledEdge = addEdgeHelp(g, vertexPropChain0, superProp2);
+                    }
+
+                    if (!rangeGlobalProp.contains(propertyChain.get(chainLength - 1).getNamedProperty())
+                            && !rangeGlobalProp.contains(propChainAx.getSuperProperty().getNamedProperty())) {
+                        // Link last Property1 with Superproperty1
+                        edge = addEdgeHelp(g, getPropertyVertex(propertyChain.get(chainLength - 1), 1),
+                                getPropertyVertex(propChainAx.getSuperProperty(), 1));
+                    }
                 }
-                createdByAxioms.get(edge).add(ax);
+
+                labelledEdge = getLabelledEdge(ax, labelledEdge, edge);
+
                 // Link all other properties in the chain, by connecting the R1 to S0 iff
                 // propertychain has the form (...,R,S,...)
                 for (int k = 0; k < chainLength - 1; k++) {
-                    DefaultEdge edge1 = addEdgeHelp(g, getPropertyVertex(propertyChain.get(k), 1),
-                            getPropertyVertex(propertyChain.get(k + 1), 0));
-                    if (!createdByAxioms.containsKey(edge1)) {
-                        createdByAxioms.put(edge1, new HashSet<OWLAxiom>());
+                    DefaultEdge edge1 = null;
+                    if (!globalProp.contains(propertyChain.get(k).getNamedProperty())
+                            && !rangeGlobalProp.contains(propertyChain.get(k).getNamedProperty())
+                            && !globalProp.contains(propertyChain.get(k + 1).getNamedProperty())
+                            && !domainGlobalProp.contains(propertyChain.get(k + 1))) {
+                        edge1 = addEdgeHelp(g, getPropertyVertex(propertyChain.get(k), 1),
+                                getPropertyVertex(propertyChain.get(k + 1), 0));
                     }
-                    createdByAxioms.get(edge1).add(ax);
+                    if (labelledEdge != null) {
+                        if (!createdByAxioms.containsKey(edge1)) {
+                            createdByAxioms.put(edge1, new HashSet<OWLAxiom>());
+                        }
+                        createdByAxioms.get(edge1).add(ax);
+                    } else {
+                        labelledEdge = edge1;
+                    }
                 }
                 break;
 
@@ -561,8 +660,12 @@ public class PartitioningCore {
 
                 // get the R0 and R1 for all object properties R in the axiom
                 naryPropAx.properties().forEach(prop -> {
-                    object_prop_zero.add(getPropertyVertex(prop, 0));
-                    object_prop_one.add(getPropertyVertex(prop, 1));
+                    if (!domainGlobalProp.contains(prop.getNamedProperty()) && !globalProp.contains(prop.getNamedProperty())) {
+                        object_prop_zero.add(getPropertyVertex(prop, 0));
+                    }
+                    if (!rangeGlobalProp.contains(prop.getNamedProperty()) && !globalProp.contains(prop.getNamedProperty())) {
+                        object_prop_one.add(getPropertyVertex(prop, 1));
+                    }
                 });
 
                 // Connect all R0
@@ -579,33 +682,44 @@ public class PartitioningCore {
                 OWLObjectPropertyExpression firstProp = iopax.getFirstProperty();
                 OWLObjectPropertyExpression secondProp = iopax.getSecondProperty();
 
-                // connect R0 with S1 and R1 with S0
-                labelledEdge = addEdgeHelp(g, getPropertyVertex(firstProp, 0), getPropertyVertex(secondProp, 1));
-                DefaultEdge edge1 = addEdgeHelp(g, getPropertyVertex(secondProp, 0), getPropertyVertex(firstProp, 1));
-                if (!createdByAxioms.containsKey(edge1)) {
-                    createdByAxioms.put(edge1, new HashSet<OWLAxiom>());
+                if (!globalProp.contains(firstProp.getNamedProperty()) && !globalProp.contains(secondProp.getNamedProperty())) {
+                    // connect R0 with S1 and R1 with S0
+                    if (!domainGlobalProp.contains(firstProp.getNamedProperty()) && !rangeGlobalProp.contains(secondProp.getNamedProperty())) {
+                        labelledEdge = addEdgeHelp(g, getPropertyVertex(firstProp, 0), getPropertyVertex(secondProp, 1));
+                    }
+
+                    DefaultEdge edge1 = null;
+                    if (!rangeGlobalProp.contains(firstProp.getNamedProperty()) && !domainGlobalProp.contains(secondProp.getNamedProperty())) {
+                        edge1 = addEdgeHelp(g, getPropertyVertex(secondProp, 0), getPropertyVertex(firstProp, 1));
+                    }
+                    labelledEdge = getLabelledEdge(ax, labelledEdge, edge1);
                 }
-                createdByAxioms.get(edge1).add(ax);
                 break;
 
             case "ObjectPropertyDomain":
                 OWLObjectPropertyDomainAxiom objPropDomAx = (OWLObjectPropertyDomainAxiom) ax;
-                if (!objPropDomAx.getDomain().isOWLThing()) {
-                    // Connect R0 to the domain
-                    labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropDomAx.getProperty(), 0),
-                            OntologyDescriptor.getCleanNameOWLObj(objPropDomAx.getDomain()));
-                } else {
-                    labelledEdge = createLoopEdge(g, getPropertyVertex(objPropDomAx.getProperty(), 0));
+                if (!globalProp.contains(objPropDomAx.getProperty().getNamedProperty())
+                        && !domainGlobalProp.contains(objPropDomAx.getProperty().getNamedProperty())) {
+                    if (!objPropDomAx.getDomain().isOWLThing()) {
+                        // Connect R0 to the domain
+                        labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropDomAx.getProperty(), 0),
+                                OntologyDescriptor.getCleanNameOWLObj(objPropDomAx.getDomain()));
+                    } else {
+                        labelledEdge = createLoopEdge(g, getPropertyVertex(objPropDomAx.getProperty(), 0));
+                    }
                 }
                 break;
 
             case "ObjectPropertyRange":
                 OWLObjectPropertyRangeAxiom objPropRangeAx = (OWLObjectPropertyRangeAxiom) ax;
-                if (!objPropRangeAx.getRange().isOWLThing()) {
-                    // Connect R1 to the range
-                    labelledEdge = addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 0),
-                            OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
-                } else {
+                if (!globalProp.contains(objPropRangeAx.getProperty().getNamedProperty())
+                        && !rangeGlobalProp.contains(objPropRangeAx.getProperty().getNamedProperty())) {
+                    if (!objPropRangeAx.getRange().isOWLThing()) {
+                        // Connect R1 to the range
+                        addEdgeHelp(g, getPropertyVertex(objPropRangeAx.getProperty(), 1),
+                                OntologyDescriptor.getCleanNameOWLObj(objPropRangeAx.getRange()));
+
+                    }
                     labelledEdge = createLoopEdge(g, getPropertyVertex(objPropRangeAx.getProperty(), 0));
                 }
                 break;
@@ -613,8 +727,11 @@ public class PartitioningCore {
             case "FunctionalObjectProperty":
             case "InverseFunctionalObjectProperty":
                 // In this case we only need to label a vertex with this axiom
-                labelledEdge = createLoopEdge(g,
-                        getPropertyVertex(((OWLObjectPropertyCharacteristicAxiom) ax).getProperty(), 0));
+                OWLObjectPropertyExpression propAx = ((OWLObjectPropertyCharacteristicAxiom) ax).getProperty();
+                if (!globalProp.contains(propAx.getNamedProperty())) {
+                    labelledEdge = createLoopEdge(g,
+                            getPropertyVertex(propAx, 0));
+                }
                 break;
 
             case "ReflexiveObjectProperty":
@@ -624,8 +741,10 @@ public class PartitioningCore {
             case "TransitiveObjectProperty":
                 OWLObjectPropertyCharacteristicAxiom propax = (OWLObjectPropertyCharacteristicAxiom) ax;
                 // In this cases we need to connect R0 and R1
-                labelledEdge = addEdgeHelp(g, getPropertyVertex(propax.getProperty(), 0),
-                        getPropertyVertex(propax.getProperty(), 1));
+                if (!globalProp.contains(propax.getProperty().getNamedProperty())) {
+                    labelledEdge = addEdgeHelp(g, getPropertyVertex(propax.getProperty(), 0),
+                            getPropertyVertex(propax.getProperty(), 1));
+                }
                 break;
 
             // ------------------- Data Property Axioms --------------------
@@ -801,13 +920,33 @@ public class PartitioningCore {
     }
 
     /**
+     * If the labelled edge is defined, save only the creator-axioms of the edge,
+     * else set the edge as the labelled edge
+     *
+     * @param ax
+     * @param labelledEdge
+     * @param edge
+     * @return
+     */
+    private DefaultEdge getLabelledEdge(OWLAxiom ax, DefaultEdge labelledEdge, DefaultEdge edge) {
+        if (labelledEdge != null && edge != null) {
+            if (!createdByAxioms.containsKey(edge)) {
+                createdByAxioms.put(edge, new HashSet<OWLAxiom>());
+            }
+            createdByAxioms.get(edge).add(ax);
+        } else if (labelledEdge == null) {
+            labelledEdge = edge;
+        }
+        return labelledEdge;
+    }
+
+    /**
      * Adds edges for all non-logical axioms
      *
      * @param ax  The axiom
      * @param ont The given ontology
      */
     public void addNonLogicalAxiomEdges(OWLOntology ont, OWLAxiom ax) {
-
         // Vertex for labelling
         DefaultEdge edge = null;
 
@@ -839,19 +978,19 @@ public class PartitioningCore {
                 // If the edgeReference is null, then the property belongs to a heuristic-removed
                 // entity
                 if (edgeReference.get() != null && annotToAxioms.containsKey(annot.getProperty())) {
-                	if (!edgeToAxioms.containsKey(edgeReference.get())) {
-                		edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
-                	}
-                	edgeToAxioms.get(edgeReference.get()).addAll(annotToAxioms.get(annot.getProperty()));
+                    if (!edgeToAxioms.containsKey(edgeReference.get())) {
+                        edgeToAxioms.put(edgeReference.get(), new HashSet<OWLAxiom>());
+                    }
+                    edgeToAxioms.get(edgeReference.get()).addAll(annotToAxioms.get(annot.getProperty()));
                 }
 
-                //edge = edgeReference.get();
+                edge = edgeReference.get();
                 break;
 
             case "Declaration":
                 OWLDeclarationAxiom decl = (OWLDeclarationAxiom) ax;
                 OWLEntity entity = decl.getEntity();
-                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty())) {
+                if (!entity.isTopEntity() && (entity.isOWLObjectProperty() || entity.isOWLDataProperty()) && (entity.isOWLObjectProperty() && !globalProp.contains(entity.asOWLObjectProperty()))) {
                     edge = createLoopEdge(g,
                             OntologyDescriptor.getCleanNameOWLObj(decl.getEntity()) + Settings.PROPERTY_0_DESIGNATOR);
                 } else if (!entity.isTopEntity() && (entity.isOWLClass() || entity.isOWLNamedIndividual())) {
@@ -860,7 +999,7 @@ public class PartitioningCore {
                     }
                 } else if (entity.isOWLAnnotationProperty()) {
 
-                } else if (!entity.isTopEntity()){
+                } else if (!entity.isTopEntity()) {
                     System.err.println("Missing declaration type: " + decl.toString());
                 }
                 break;
@@ -889,6 +1028,14 @@ public class PartitioningCore {
 
     Map<OWLObjectPropertyExpression, String[]> propertyToName = new HashMap<>();
 
+    /**
+     * CC's will not necessary have axiom labels. The method creates an connection
+     * from the CC's without axiom labels to the biggest partition
+     *
+     * @param g2 The input graph
+     * @param ccWithLabel Set of CCs with labels
+     * @param ccWithoutLabel Set of CCs without labels
+     */
     private void connectUnLabelledCCToBiggest(Graph<String, DefaultEdge> g2, Set<Set<String>> ccWithLabel,
                                               Set<Set<String>> ccWithoutLabel) {
         // Sort the ccWithLabel by size
@@ -1156,7 +1303,7 @@ public class PartitioningCore {
                         ont = manager.createOntology(axs);
 
                     } else {
-                        ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".ow"));
+                        ont = manager.createOntology(axs, IRI.create(parentIRIString + partitionNum + ".owl"));
                     }
                     toReturn.add(ont);
                     partitionNum++;

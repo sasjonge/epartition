@@ -344,7 +344,28 @@ class ObjectPropertyAxiomsTest extends PartitioningTest {
 		
 		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma));
 	}
-	
+
+	@Test
+	void objectPropertyRangePreTest() throws IOException, ExportException {
+		OWLClass a = factory.getOWLClass(base + "A");
+		OWLClass b = factory.getOWLClass(base + "B");
+		OWLObjectProperty r = factory.getOWLObjectProperty(base + "r");
+		OWLObjectProperty s = factory.getOWLObjectProperty(base + "s");
+
+		OWLInverseObjectPropertiesAxiom alpha = factory.getOWLInverseObjectPropertiesAxiom(r, s);
+		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(a, b);
+		OWLObjectPropertyDomainAxiom gamma = factory.getOWLObjectPropertyDomainAxiom(s, b);
+
+		ontology.add(alpha, beta,gamma);
+
+		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+
+		assertEquals(2, partitions.size());
+
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma));
+	}
+
+
 	@Test
 	void objectPropertyRangeTest() throws IOException, ExportException {
 		OWLClass a = factory.getOWLClass(base + "A");
@@ -352,17 +373,19 @@ class ObjectPropertyAxiomsTest extends PartitioningTest {
 		OWLObjectProperty r = factory.getOWLObjectProperty(base + "r");
 		OWLObjectProperty s = factory.getOWLObjectProperty(base + "s");
 
-		OWLSubObjectPropertyOfAxiom alpha = factory.getOWLSubObjectPropertyOfAxiom(r, s);
+		OWLInverseObjectPropertiesAxiom alpha = factory.getOWLInverseObjectPropertiesAxiom(r, s);
 		OWLSubClassOfAxiom beta = factory.getOWLSubClassOfAxiom(a, b);
-		OWLObjectPropertyRangeAxiom gamma = factory.getOWLObjectPropertyRangeAxiom(s, a);
+		OWLObjectPropertyDomainAxiom gamma = factory.getOWLObjectPropertyDomainAxiom(s, b);
+		OWLObjectPropertyRangeAxiom delta = factory.getOWLObjectPropertyRangeAxiom(s, a);
 	
-		ontology.add(alpha, beta, gamma);
+		ontology.add(alpha, beta, gamma, delta);
 		
 		List<OWLOntology> partitions = (new PartitioningCore()).partition(ontology);
+		System.out.println(partitions.toString());
 				
 		assertEquals(1, partitions.size());
 		
-		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma));
+		areAllAxiomsInExactlyOnePartition(partitions, Arrays.asList(alpha,beta,gamma,delta));
 	}
 	
 	@Test

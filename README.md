@@ -21,10 +21,6 @@ The src files are structured as follows
 
 /cwts contains a copy of the source files of [this implementation](https://github.com/CWTSLeiden/networkanalysis) by the CWTS Leiden.
 
-## Usage
-
-I'm currently not offering an executable for this project. Therefore you have to run this project. To set the input directory (containig the ontologie in .owl format) and the output file (.graphml graph) and other settings like the heuristics to use or the way the output is visualized, have a look at the Settings.java file.
-
 ## References
 
 S. Jongebloed and T. Schneider: Ontology Partitioning Using E-Connections Revisited. In Proc. 31st DL, vol. 2211 of CEUR, 2018. [PDF](http://www.informatik.uni-bremen.de/tdki/research/papers/2018/JS-DL18.pdf)

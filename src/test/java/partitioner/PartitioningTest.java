@@ -52,6 +52,8 @@ abstract class PartitioningTest {
 		Settings.USE_CD = false;
 		Settings.USE_OLH = false;
 		Settings.USE_ULH = false;
+		Settings.USE_OLH_AFTER = false;
+		Settings.USE_IPH = false;
 	}
 
 	public void areAllAxiomsInExactlyOnePartition (List<OWLOntology> partitions,List<OWLLogicalAxiom> axioms) {
